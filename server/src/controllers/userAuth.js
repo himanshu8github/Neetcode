@@ -1,4 +1,4 @@
-const userSchemaa = require("../models/userModel")
+const userSchema = require("../models/userModel")
 const validator = require("../utils/validator")
 const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
@@ -18,7 +18,10 @@ const register = async(req, res) => {
        
        req.body.role = 'user'
  
-           const user = await userSchemaa.create(req.body);
+           const user = await userSchema.create(req.body);
+
+           // we send token here like when user register then user can 
+           //access the website no need to login after registration.
 
        const token = jwt.sign({_id:user._id, emailId:emailId, role:'user'}, process.env.JWT_KEY , {expiresIn: 60*60}) // sec
 
@@ -46,15 +49,15 @@ const login = async (req, res) => {
         if(!password)
             throw new Error("Invalid Credentials");   
 
-       const user = await userSchemaa.findOne({ emailId });
+       const user = await userSchema.findOne({ emailId });
     if (!user) throw new Error("User not found");
 
     const match = await bcrypt.compare(password, user.password);
+    
     if (!match) throw new Error("Invalid Credentials");
      
 
-     if(!match)
-        throw new Error("Invalid Credentials ")
+    
 
        const token = jwt.sign({_id:user._id, emailId:emailId, role: user.role }, process.env.JWT_KEY , {expiresIn: 60*60}) // sec
        res.cookie('token', token, {maxAge: 60*60*1000}); // in milisec\
@@ -100,9 +103,9 @@ const adminRegister = async (req, res) => {
        const {firstName, password, emailId} = req.body;
        
        req.body.password = await bcrypt.hash(password, 10);
-       
+       req.body.role = 'admin';
  
-           const user = await userSchemaa.create(req.body);
+           const user = await userSchema.create(req.body);
 
        const token = jwt.sign({_id:user._id, emailId:emailId, role: user.role}, process.env.JWT_KEY , {expiresIn: 60*60}) // sec
 

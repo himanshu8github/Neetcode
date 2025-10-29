@@ -1,6 +1,6 @@
 const validatorLib = require('validator');
 
-const validator = (data) => {
+const validate = (data) => {
 
     const mandatoryField = ['firstName', 'emailId', 'password'];
 
@@ -17,4 +17,4 @@ const validator = (data) => {
 
 }
 
-module.exports = validator;
+module.exports = validate;

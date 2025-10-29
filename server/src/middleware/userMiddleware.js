@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const redisClient = require('../config/redis');
-const userSchemaa = require("../models/userModel");
+const userSchema = require("../models/userModel");
 
 const userMiddleware = async (req, res, next) => {
 
@@ -21,7 +21,7 @@ const userMiddleware = async (req, res, next) => {
        if(!_id) throw new Error ("Invalid Token Payload")
        
 
-        const user = await userSchemaa.findById(_id);
+        const user = await userSchema.findById(_id);
          if (!user) throw new Error("User doesn't exist");
 
        req.user = user;

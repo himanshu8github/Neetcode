@@ -13,6 +13,7 @@ app.use(cookieParser());
 
 app.use('/user', authRouter)
 
+
 const initialiseConnection = async () => {
 
 
@@ -24,7 +25,7 @@ const initialiseConnection = async () => {
       console.log("DB & Redis Connected");
     });
   } catch (err) {
-    console.error("Startup Error:", err);
+    console.error("Error from index.js db function:", err);
   }
 };
 
