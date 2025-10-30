@@ -56,10 +56,15 @@ const createProblem = async (req, res) => {
     const userProblem = await Problem.create({
         ...req.body,
         problemCreator: req.result._id
+
     })
+    res.status(201).send("Problem saved sucessfully");
 
    }catch(err){
+    res.status(400).send("Error from create problem middleware file" + err);
 
    }
 
 }
+
+module.exports = createProblem;

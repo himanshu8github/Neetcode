@@ -6,6 +6,8 @@ const adminRegisterMiddleware = async (req, res, next) => {
 
     try{
 
+        req.body.role = 'admin'
+
         const{token} = req.cookies;
 
         if(!token) throw new Error ("Token is not Present");

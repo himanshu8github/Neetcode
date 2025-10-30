@@ -23,7 +23,13 @@ const register = async(req, res) => {
            // we send token here like when user register then user can 
            //access the website no need to login after registration.
 
-       const token = jwt.sign({_id:user._id, emailId:emailId, role:'user'}, process.env.JWT_KEY , {expiresIn: 60*60}) // sec
+        // Token is automatically sent after registration
+        const token = jwt.sign(
+            {_id:user._id, emailId:emailId, role:'user'}, 
+            process.env.JWT_KEY, 
+            {expiresIn: 60*60}
+        );
+
 
        res.cookie('token', token, {maxAge: 60*60*1000}); // in milisec
        res.status(201).send('user registered sucessfully');
@@ -94,6 +100,37 @@ const logout = async (req, res) => {
     }
 }
 
+// REGISTER FIRST ADMIN (no token needed - creates the very first admin)
+const firstAdminRegister = async (req, res) => {
+    try {
+        // Check if admin already exists
+        const adminExists = await userSchema.findOne({ role: 'admin' });
+        if (adminExists) {
+            throw new Error("Admin already exists. Cannot create another admin this way.");
+        }
+
+        validator(req.body);
+        const {firstName, password, emailId} = req.body;
+        
+        req.body.password = await bcrypt.hash(password, 10);
+        req.body.role = 'admin'; //  admin role
+ 
+        const user = await userSchema.create(req.body);
+
+        const token = jwt.sign(
+            {_id:user._id, emailId:emailId, role:'admin'}, 
+            process.env.JWT_KEY, 
+            {expiresIn: 60*60}
+        );
+
+        res.cookie('token', token, {maxAge: 60*60*1000});
+        res.status(201).send('First admin registered successfully');
+    }
+    catch(err){
+        res.status(400).send('Error : ' + err);
+    }
+}
+
 const adminRegister = async (req, res) => {
       
     try{
@@ -103,7 +140,7 @@ const adminRegister = async (req, res) => {
        const {firstName, password, emailId} = req.body;
        
        req.body.password = await bcrypt.hash(password, 10);
-    //    req.body.role = 'admin';
+       req.body.role = 'admin';
  
            const user = await userSchema.create(req.body);
 
@@ -121,4 +158,29 @@ const adminRegister = async (req, res) => {
 
 }
 
-module.exports = {register, login, logout, adminRegister}
+
+const deleteUser = async (req, res) => {
+    try {
+        const { emailId } = req.body;
+
+        if (!emailId) {
+            throw new Error("Email is required");
+        }
+
+        // Find and delete user (admin or ordinary)
+        const user = await userSchema.findOneAndDelete({ emailId });
+        
+        if (!user) {
+            throw new Error("User not found");
+        }
+
+        res.status(200).send("User deleted successfully");
+    } 
+    catch(err) {
+        res.status(400).send('Error : ' + err.message);
+    }
+}
+
+module.exports = {register, login, logout, adminRegister, firstAdminRegister, deleteUser};
+
+ 
