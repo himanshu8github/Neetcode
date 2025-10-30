@@ -103,7 +103,7 @@ const adminRegister = async (req, res) => {
        const {firstName, password, emailId} = req.body;
        
        req.body.password = await bcrypt.hash(password, 10);
-       req.body.role = 'admin';
+    //    req.body.role = 'admin';
  
            const user = await userSchema.create(req.body);
 

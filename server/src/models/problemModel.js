@@ -50,6 +50,7 @@ const problemSchema = new Schema({
   ],
 
 
+  // boiler plate code
   startCode:[
     {
         language:{
@@ -82,6 +83,7 @@ const problemSchema = new Schema({
 problemCreator:{
     type : Schema.Types.ObjectId,
     ref:'user',
+     // refer this to Db user because there user data is stored(all information stored in thier we dont have to define schema again here for the creator)
     required:true,
 }
 

@@ -7,12 +7,14 @@ const problemRouter = express.Router();
 // routes for => // create //fetch // update //delete
 
 // require admin access here
+// create , update, delete problem
 problemRouter.post("/create",adminRegisterMiddleware, createPropblem);
 problemRouter.patch("/:id",updateProblem);
 problemRouter.delete("/:id", deleteProblem);
 
-problemRouter.get("/:id", getProblemById);
-problemRouter.get("/", getAllProblem);
+// access problem
+problemRouter.get("/:id", fetchProblemById);
+problemRouter.get("/", fetchAllProblem);
 problemRouter.get('/user', solvedAllProblemByUser);
 
 
