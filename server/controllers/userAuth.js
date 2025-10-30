@@ -10,6 +10,10 @@ const register = async(req, res) => {
     try{
         //validate the data
 
+          if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).send('Error: Request body is empty');
+        }
+
         validator(req.body);
 
        const {firstName, password, emailId} = req.body;
@@ -104,6 +108,10 @@ const logout = async (req, res) => {
 const firstAdminRegister = async (req, res) => {
     try {
         // Check if admin already exists
+
+          if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).send('Error: Request body is empty');
+        }
         const adminExists = await userSchema.findOne({ role: 'admin' });
         if (adminExists) {
             throw new Error("Admin already exists. Cannot create another admin this way.");
@@ -134,6 +142,10 @@ const firstAdminRegister = async (req, res) => {
 const adminRegister = async (req, res) => {
       
     try{
+
+          if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).send('Error: Request body is empty');
+        }
      
         validator(req.body);
 
@@ -181,6 +193,27 @@ const deleteUser = async (req, res) => {
     }
 }
 
-module.exports = {register, login, logout, adminRegister, firstAdminRegister, deleteUser};
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await userSchema.find({});
+        
+        if (users.length === 0) {
+            return res.status(200).send({
+                message: "No users found",
+                users: []
+            });
+        }
 
- 
+        res.status(200).send({
+            message: "All users fetched successfully",
+            totalUsers: users.length,
+            users: users
+        });
+    } 
+    catch(err) {
+        res.status(400).send('Error : ' + err);
+    }
+}
+
+
+module.exports = {register, login, logout, adminRegister, firstAdminRegister, deleteUser, getAllUsers};

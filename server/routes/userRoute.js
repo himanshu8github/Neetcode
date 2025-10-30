@@ -3,8 +3,10 @@ const userMiddleware = require("../middleware/userMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
 const authRouter = express.Router();
-const { register, login, logout, adminRegister, firstAdminRegister, deleteUser } = require('../controllers/userAuth')
+const { register, login, logout, adminRegister, firstAdminRegister, deleteUser ,getAllUsers} = require('../controllers/userAuth')
 
+
+authRouter.get('/all',  getAllUsers);
 // User Registration (anyone can register as ordinary user)
 authRouter.post("/register", register);
 

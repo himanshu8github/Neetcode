@@ -7,8 +7,6 @@ const authRouter = require("./routes/userRoute");
 const problemRouter = require('./routes/problemRoute')
 
 
- 
-
 const app = express();
 
 app.use(express.json());
