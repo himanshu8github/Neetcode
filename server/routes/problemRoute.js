@@ -1,6 +1,6 @@
 const express = require('express');
 const adminRegisterMiddleware = require("../middleware/adminMiddleware");
-const userMidlleware = require("../middleware/userMiddlware")
+const userMiddleware = require("../middleware/userMiddleware")
 const {createProblem, updateProblem, deleteProblem, fetchProblemById, fetchAllProblem} = require("../controllers/userProblem")
 const problemRouter = express.Router();
 

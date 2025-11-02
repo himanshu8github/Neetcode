@@ -48,6 +48,9 @@ const waiting = async (timer) => {
 
 // GET 
 const submitToken = async (resultToken) => {
+
+     await waiting(2000); 
+
     const options = {
         method: 'GET',
         url: 'https://judge0-ce.p.rapidapi.com/submissions/batch',
@@ -61,6 +64,9 @@ const submitToken = async (resultToken) => {
             'x-rapidapi-host': 'judge0-ce.p.rapidapi.com'
         }
     };
+
+//     console.log("Submitting tokens:", resultToken);
+// console.log("Tokens string:", resultToken.join(","));
 
     while (true) {
         try {
@@ -85,10 +91,12 @@ const submitToken = async (resultToken) => {
             }
 
             await waiting(1000);
-        } catch (error) {
-            console.error('Error in submitToken:', error);
-            throw error;
-        }
+       } catch (error) {
+    console.error('Error in submitToken:', error.response?.status);
+    console.error('Error message:', error.response?.data);
+    console.error('Error headers:', error.response?.headers);
+    throw error;
+}
     }
 };
 

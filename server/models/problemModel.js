@@ -20,6 +20,7 @@ const problemSchema = new Schema({
     enum: ['array', 'graph', 'dp', 'linkedList'],
     required: true
   },
+  
   visibleTestCases: [
     {
       input: {
@@ -88,7 +89,10 @@ problemCreator:{
 }
 
 
-});
+
+},
+{ timestamps: true }
+);
 
 const Problem = mongoose.model("Problem", problemSchema);
 module.exports = Problem; 
