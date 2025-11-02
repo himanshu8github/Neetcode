@@ -1,70 +1,83 @@
-const {getLanguageById , submitBatch} = require("../utils/problemUtility");
-const Problem = require("../models/problemModel")
+const { getLanguageById, submitBatch, submitToken } = require("../utils/problemUtility");
+const Problem = require("../models/problemModel");
 
 const createProblem = async (req, res) => {
-
-    const {title, description, difficulty, tags, visibleTestCases, hiddenTestCases, 
-        startCode, referenceSolution, problemCreator
+    const { title, description, difficulty, tags, visibleTestCases, hiddenTestCases, 
+        startCode, referenceSolution
     } = req.body;
 
+    try {
+      
+        // Iterate through each reference solution
+        for (const { language, completeCode } of referenceSolution) {
+            // Get language ID for Judge0
+            const languageId = getLanguageById(language);
 
-   try{
+            if (!languageId) {
+                return res.status(400).send(`Unsupported language: ${language}`);
+            }
 
-    // WE WILL iterate on array from ref solution schema(DB)
-    // like we consider refrenceSolution is an array
+            //  const decodedCode = completeCode.replace(/\\n/g, '\n');
 
-    for(const {language, completeCode} of referenceSolution){
+             
 
-        // source_code
-        // language_id
-        // stdInput
-        // expected_output
+            // Create batch submission with all visible test cases
+            const submissions = visibleTestCases.map((testcase) => ({
+                source_code: completeCode,
+             
+                language_id: languageId,
+                stdin: testcase.input,
+                expected_output: testcase.output  
+            }));
 
-        const languageId = getLanguageById(language);
+            // Submit batch to Judge0
+            const submitResult = await submitBatch(submissions);
 
+            if (!submitResult) {
+                return res.status(400).send("Failed to submit batch");
+            }
 
-        // here we create batch submission , like we send code and all multiple cases together
-        const submissions = visibleTestCases.map((testcase) => ({
-            source_code : completeCode,
-            language_id: languageId,
-            stdin : testcase.input,
-            expected_ouput : testcase.output
-        }));
+            // console.log(submitResult);
+            // Extract tokens from submission results
+            const resultToken = submitResult.map((value) => value.token);
 
-        // creating function for submission (in utils folder)
-        const submitResult = await submitBatch(submissions);
+            // Wait for results and get test output
+            const testResult = await submitToken(resultToken);
 
-        // it will create array for tokens
-        // [{"token" : "acdcvcvhjcbqacbnjqkwcnw"},
-        //   {"token " : "jchbwhjcbwcjhbechjbhc"}
-        // ]
-        // then it have only values ("lkdbejcbehkjc", 'dhGXHJACBHJ)
-        const resultToken = submitResult.map((value) => value.token);
-        
-        const testResult = await submitToken(resultToken);
-
-        for(const test of testResult){
-            if(test.status_id != 3){
-                return res.status(400).send("Error Occuured");
+            // console.log(testResult);
+            // Verify all tests passed (status_id 3 = accepted)
+            for (const test of testResult) {
+                if (test.status_id !== 3) {
+                    return res.status(400).send(`Test failed for language ${language}. Status: ${test.status_id}`);
+                }
             }
         }
 
 
+    //     console.log("req.user:", req.user);
+    //   console.log("req.user._id:", req.user?._id);
+        // All tests passed, save problem to database
+        const userProblem = await Problem.create({
+            title,
+            description,
+            difficulty,
+            tags,
+            visibleTestCases,
+            hiddenTestCases,
+            startCode,
+            referenceSolution,
+            problemCreator: req.user._id  
+        });
+
+        res.status(201).json({
+            message: "Problem saved successfully",
+            problemId: userProblem._id
+        });
+
+    } catch (err) {
+        console.error("Error in createProblem:", err);
+        res.status(400).send("Error from userProblem file of createProblem function: " + err.message);
     }
-
-    // now we will store it in DB
-    const userProblem = await Problem.create({
-        ...req.body,
-        problemCreator: req.result._id
-
-    })
-    res.status(201).send("Problem saved sucessfully");
-
-   }catch(err){
-    res.status(400).send("Error from create problem middleware file" + err);
-
-   }
-
-}
+};
 
 module.exports = createProblem;

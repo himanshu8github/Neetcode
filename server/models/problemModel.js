@@ -90,5 +90,5 @@ problemCreator:{
 
 });
 
-const Problem = mongoose.model("user", problemSchema);
+const Problem = mongoose.model("Problem", problemSchema);
 module.exports = Problem; 

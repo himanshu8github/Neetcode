@@ -1,43 +1,48 @@
 const jwt = require("jsonwebtoken");
 const redisClient = require('../config/redis');
-const userSchemaa = require("../models/userModel");
+const userSchema = require("../models/userModel");
 
-const adminRegisterMiddleware = async (req, res, next) => {
+const adminMiddleware = async (req, res, next) => {
+    try {
+        const { token } = req.cookies;
 
-    try{
+        if (!token) {
+            return res.status(401).send("Token is not present");
+        }
 
-        req.body.role = 'admin'
+        // Verify JWT token
+        const payload = jwt.verify(token, process.env.JWT_KEY);
+        const { _id } = payload;
 
-        const{token} = req.cookies;
+        if (!_id) {
+            return res.status(401).send("Invalid token payload");
+        }
 
-        if(!token) throw new Error ("Token is not Present");
+        // Check if token is blacklisted
+        const isBlocked = await redisClient.exists(`token:${token}`);
+        if (isBlocked) {
+            return res.status(401).send("Token is blacklisted");
+        }
 
-         const payload = jwt.verify(token , process.env.JWT_KEY);
-       const {_id} = payload;
+        // Fetch user from database
+        const user = await userSchema.findById(_id);
 
-       
-       if(!_id) throw new Error ("Invalid Token Payload")
+        if (!user) {
+            return res.status(404).send("User doesn't exist");
+        }
 
-        
-        const user = await userSchemaa.findById(_id);
+        // Check user role in database (not in token)
+        if (user.role !== 'admin') {
+            return res.status(403).send("Only admins can perform this action");
+        }
 
-        // for admin role
-           if(payload.role != 'admin') throw new Error ("User Doesn't exist")
+        // Set req.user with user data from database
+        req.user = user;
+        next();
 
-         if (!user) throw new Error("User doesn't exist");
-
-          // Check if token is blacklisted
-    const isBlocked = await redisClient.exists(`token:${token}`);
-    if (isBlocked) throw new Error("Token is blacklisted");
-    
-       req.user = user;
-       next();
-
-
-    }catch(err){
-        res.status(401).send("Error " + err.message);
-
+    } catch (err) {
+        res.status(401).send("Authentication error: " + err.message);
     }
-}
+};
 
-module.exports = adminRegisterMiddleware;
+module.exports = adminMiddleware;

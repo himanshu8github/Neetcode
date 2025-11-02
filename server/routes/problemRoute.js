@@ -9,7 +9,7 @@ const problemRouter = express.Router();
 
 // require admin access here
 // create , update, delete problem
-problemRouter.post("/create",adminRegisterMiddleware, createProblem);
+problemRouter.post("/create", adminRegisterMiddleware, createProblem);
 // problemRouter.patch("/:id",updateProblem);
 // problemRouter.delete("/:id", deleteProblem);
 
