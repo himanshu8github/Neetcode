@@ -1,5 +1,6 @@
 const { getLanguageById, submitBatch, submitToken } = require("../utils/problemUtility");
 const Problem = require("../models/problemModel");
+const User = require("../models/userModel");
 
 const createProblem = async (req, res) => {
     const { title, description, difficulty, tags, visibleTestCases, hiddenTestCases, 
@@ -231,6 +232,25 @@ const fetchAllProblem = async (req, res) => {
 
 }
 
+// fetch all DSA problem solved by USER
+const solvedAllProblemByUser = async (req, res) => {
 
 
-module.exports = {createProblem, updateProblem, deleteProblem, fetchProblemById, fetchAllProblem};
+    try {
+
+     const userId = req.user._id;
+     const allSolvedProblem = await User.findById(userId).populate({
+        path : "problemSolved",
+        select : "_id title difficulty tags"
+     });
+
+        res.status(200).send(allSolvedProblem.problemSolved);
+        
+    } catch (err) {
+        res.status(500).send("Server error" + err);
+    }
+}
+
+
+
+module.exports = {createProblem, updateProblem, deleteProblem, fetchProblemById, fetchAllProblem, solvedAllProblemByUser};

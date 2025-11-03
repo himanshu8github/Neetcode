@@ -31,9 +31,14 @@ const userSchema = new Schema({
         enum:['user', 'admin'],
         default: 'user'
     }, 
-    problemSolved:{
-        type: String
-    },
+    problemSolved: {
+        type:[{
+    type: Schema.Types.ObjectId,
+    ref: "Problem"
+  }],
+    unique: true
+}
+,
     password:{
         type: String,
         required : true

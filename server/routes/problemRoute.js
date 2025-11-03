@@ -1,7 +1,10 @@
 const express = require('express');
 const adminRegisterMiddleware = require("../middleware/adminMiddleware");
 const userMiddleware = require("../middleware/userMiddleware")
-const {createProblem, updateProblem, deleteProblem, fetchProblemById, fetchAllProblem} = require("../controllers/userProblem")
+const {createProblem, updateProblem, deleteProblem, 
+    fetchProblemById, fetchAllProblem, 
+    solvedAllProblemByUser} = require("../controllers/userProblem")
+    
 const problemRouter = express.Router();
 
 
@@ -17,7 +20,7 @@ problemRouter.delete("/delete/:id", adminRegisterMiddleware, deleteProblem);
 // access problem
 problemRouter.get("/problemById/:id", userMiddleware, fetchProblemById);
 problemRouter.get("/getAllProblem",  userMiddleware, fetchAllProblem);
-// problemRouter.get('/problemSolvedByUser',  userMiddleware, solvedAllProblemByUser);
+problemRouter.get('/problemSolvedByUser',  userMiddleware, solvedAllProblemByUser);
 
 
 
