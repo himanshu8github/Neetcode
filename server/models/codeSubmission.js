@@ -50,7 +50,7 @@ const submissionSchema = new Schema({
   timestamps: true
 });
 
-
+// compound index
 submissionSchema.index({userId:1 , problemId:1});
 
 

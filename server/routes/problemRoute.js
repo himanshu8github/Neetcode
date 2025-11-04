@@ -3,7 +3,7 @@ const adminRegisterMiddleware = require("../middleware/adminMiddleware");
 const userMiddleware = require("../middleware/userMiddleware")
 const {createProblem, updateProblem, deleteProblem, 
     fetchProblemById, fetchAllProblem, 
-    solvedAllProblemByUser} = require("../controllers/userProblem")
+    solvedAllProblemByUser,submittedProblem} = require("../controllers/userProblem")
     
 const problemRouter = express.Router();
 
@@ -21,6 +21,7 @@ problemRouter.delete("/delete/:id", adminRegisterMiddleware, deleteProblem);
 problemRouter.get("/problemById/:id", userMiddleware, fetchProblemById);
 problemRouter.get("/getAllProblem",  userMiddleware, fetchAllProblem);
 problemRouter.get('/problemSolvedByUser',  userMiddleware, solvedAllProblemByUser);
+problemRouter.get("/submittedProblem/:pid", userMiddleware,submittedProblem);   // pid - problemID
 
 
 
