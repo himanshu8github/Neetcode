@@ -29,4 +29,19 @@ authRouter.post('/admin/register/first', firstAdminRegister);
 // Register new admins (only existing admins can do this - requires admin middleware)
 authRouter.post('/admin/register', adminMiddleware, adminRegister);
 
+authRouter.get('/check',userMiddleware,(req,res)=>{
+
+    const reply = {
+        firstName: req.user.firstName,
+        emailId: req.user.emailId,
+        _id:req.user._id,
+        role:req.user.role,
+    }
+
+    res.status(200).json({
+        user:reply,
+        message:"Valid User"
+    });
+})
+
 module.exports = authRouter;

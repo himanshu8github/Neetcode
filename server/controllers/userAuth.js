@@ -35,9 +35,18 @@ const register = async(req, res) => {
             {expiresIn: 60*60}
         );
 
+           const reply = {
+        firstName : user.firstName,
+        emailId : user.emailId,
+        _id : user._id
+    }
+     
 
        res.cookie('token', token, {maxAge: 60*60*1000}); // in milisec
-       res.status(201).send('user registered sucessfully');
+        res.status(200).json({
+        user : reply,
+        message : "User Registered sucessfully"
+       })
 
   
 
@@ -66,14 +75,19 @@ const login = async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     
     if (!match) throw new Error("Invalid Credentials");
+
+    const reply = {
+        firstName : user.firstName,
+        emailId : user.emailId,
+        _id : user._id
+    }
      
-
-    
-
        const token = jwt.sign({_id:user._id, emailId:emailId, role: user.role }, process.env.JWT_KEY , {expiresIn: 60*60}) // sec
        res.cookie('token', token, {maxAge: 60*60*1000}); // in milisec\
-       res.status(200).send("Logged in successfully");
-
+       res.status(201).json({
+        user : reply,
+        message : "Login sucessfully"
+       })
 
 
     }catch(err){
