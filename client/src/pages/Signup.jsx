@@ -15,6 +15,7 @@ const signupSchema = z.object({
 });
 
 function Signup() {
+  // for eye in password input box
   const [showPassword, setShowPassword] = useState(false);
   const dispatch = useDispatch();
   const navigate = useNavigate();

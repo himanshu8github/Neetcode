@@ -6,12 +6,20 @@ const redisClient = require('./config/redis');
 const authRouter = require("./routes/userRoute");
 const problemRouter = require('./routes/problemRoute')
 const submitRouter = require("./routes/codeSubmitByUser");
+const cors = require('cors');
 
 
 const app = express();
-
 app.use(express.json());
 app.use(cookieParser());
+
+
+app.use(cors({
+    origin: 'http://localhost:5173',
+    credentials: true 
+}))
+
+//routes
 app.use('/user', authRouter);
 app.use('/problem', problemRouter);
 app.use('/codeSubmission', submitRouter);

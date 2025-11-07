@@ -21,16 +21,23 @@ const createProblem = async (req, res) => {
 
             //  const decodedCode = completeCode.replace(/\\n/g, '\n');
 
-             
+              const actualCode = completeCode.replace(/\\n/g, '\n');
 
             // Create batch submission with all visible test cases
-            const submissions = visibleTestCases.map((testcase) => ({
-                source_code: completeCode,
+            // const submissions = visibleTestCases.map((testcase) => ({
+            //  source_code: actualCode,   
              
-                language_id: languageId,
-                stdin: testcase.input,
-                expected_output: testcase.output  
-            }));
+            //     language_id: languageId,
+            //     stdin: testcase.input,
+            //     expected_output: testcase.output  
+            // }));
+            // FIXED CODE
+const submissions = visibleTestCases.map((testcase) => ({
+    source_code: Buffer.from(actualCode).toString('base64'),
+    language_id: languageId,
+    stdin: Buffer.from(testcase.input).toString('base64'),
+    expected_output: Buffer.from(testcase.output).toString('base64')
+}));
 
             // Submit batch to Judge0
             const submitResult = await submitBatch(submissions);
@@ -81,6 +88,49 @@ const createProblem = async (req, res) => {
         res.status(400).send("Error from userProblem file of createProblem function: " + err.message);
     }
 };
+
+// const createProblem = async (req, res) => {
+//     const { title, description, difficulty, tags, visibleTestCases, hiddenTestCases, 
+//         startCode, referenceSolution
+//     } = req.body;
+
+//     try {
+//         // Just validate the data
+//         if (!title || !description || !difficulty || !tags) {
+//             return res.status(400).json({ error: "Missing required fields" });
+//         }
+
+//         if (!visibleTestCases?.length || !hiddenTestCases?.length) {
+//             return res.status(400).json({ error: "Test cases required" });
+//         }
+
+//         if (!startCode?.length === 3 || !referenceSolution?.length === 3) {
+//             return res.status(400).json({ error: "Code for all 3 languages required" });
+//         }
+
+//         // Save directly - no Judge0
+//         const userProblem = await Problem.create({
+//             title,
+//             description,
+//             difficulty,
+//             tags,
+//             visibleTestCases,
+//             hiddenTestCases,
+//             startCode,
+//             referenceSolution,
+//             problemCreator: req.user._id  
+//         });
+
+//         res.status(201).json({
+//             message: "Problem saved successfully",
+//             problemId: userProblem._id
+//         });
+
+//     } catch (err) {
+//         console.error("Error:", err.message);
+//         res.status(400).json({ error: err.message });
+//     }
+// };
 
 
 // for updating problem using id

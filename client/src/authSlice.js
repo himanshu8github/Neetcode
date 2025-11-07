@@ -5,10 +5,15 @@ export const registerUser = createAsyncThunk(
   'auth/register',
   async (userData, { rejectWithValue }) => {
     try {
+      console.log('Sending data:', userData);
     const response =  await axiosClient.post('/user/register', userData);
     return response.data.user;
     } catch (error) {
-      return rejectWithValue(error);
+       console.log('Error response:', error.response?.data);
+      return rejectWithValue({
+     message: error.response?.data?.message || error.message,
+     status: error.response?.status
+   });
     }
   }
 );
@@ -18,10 +23,14 @@ export const loginUser = createAsyncThunk(
   'auth/login',
   async (credentials, { rejectWithValue }) => {
     try {
+    
       const response = await axiosClient.post('/user/login', credentials);
       return response.data.user;
     } catch (error) {
-      return rejectWithValue(error);
+
+      return rejectWithValue({
+ 
+   });
     }
   }
 );
