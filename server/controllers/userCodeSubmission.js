@@ -3,6 +3,15 @@ const Submission = require("../models/codeSubmission");
 const User = require("../models/userModel");
 const {getLanguageById,submitBatch,submitToken} = require("../utils/problemUtility");
 
+const decodeBase64 = (str) => {
+    if (!str) return '';
+    try {
+        return Buffer.from(str, 'base64').toString('utf-8');
+    } catch (err) {
+        return str;
+    }
+};
+
 const userCodeSubmit = async (req, res) => {
 
     try{
@@ -176,9 +185,14 @@ const runCode = async(req,res)=>{
 
    
   
-   res.status(201).json({
+ res.status(201).json({
     success:status,
-    testCases: testResult,
+    testCases: testResult.map(tc => ({
+        stdin: decodeBase64(tc.stdin),
+        expected_output: decodeBase64(tc.expected_output),
+        stdout: tc.stdout ? decodeBase64(tc.stdout) : '',
+        status_id: tc.status_id
+    })),
     runtime,
     memory
    });

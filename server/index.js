@@ -22,7 +22,7 @@ app.use(cors({
 //routes
 app.use('/user', authRouter);
 app.use('/problem', problemRouter);
-app.use('/codeSubmission', submitRouter);
+app.use('/submission', submitRouter);
 
 const initialiseConnection = async () => {
     try {

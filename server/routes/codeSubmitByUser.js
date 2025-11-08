@@ -5,7 +5,7 @@ const {userCodeSubmit, runCode} = require("../controllers/userCodeSubmission")
 
 
 submitCodeRouter.post("/submit/:id", userMiddleware, userCodeSubmit );
-submitCodeRouter.post("/runcode/:id", userMiddleware,  runCode);
+submitCodeRouter.post("/run/:id", userMiddleware,  runCode);
 
 
 module.exports = submitCodeRouter;

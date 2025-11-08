@@ -36,7 +36,9 @@ const userSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: "Problem"
   }],
-    unique: true
+ 
+        default: [],
+       sparse: true  // Allows multiple documents without this field
 }
 ,
     password:{
