@@ -3,8 +3,8 @@ import { useForm } from 'react-hook-form';
 import Editor from '@monaco-editor/react';
 import { useParams } from 'react-router';
 import axiosClient from "../utils/axiosClient"
-// import SubmissionHistory from "../components/SubmissionHistory"
-// import ChatAi from '../components/ChatAi';
+import SubmissionHistory from "../components/SubmissionHistory"
+import ChatAi from '../components/AiBot';
 // import Editorial from '../components/Editorial';
 
 const langMap = {
@@ -16,7 +16,7 @@ const langMap = {
 
 const ProblemPage = () => {
   const [problem, setProblem] = useState(null);
-  const [selectedLanguage, setSelectedLanguage] = useState('java');
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [runResult, setRunResult] = useState(null);
@@ -211,7 +211,7 @@ const ProblemPage = () => {
                   <div className="mt-8">
                     <h3 className="text-lg font-semibold mb-4">Examples:</h3>
                     <div className="space-y-4">
-                     {problem?.visibleTestCases?.map((example, index) => (
+                      {problem.visibleTestCases.map((example, index) => (
                         <div key={index} className="bg-base-200 p-4 rounded-lg">
                           <h4 className="font-semibold mb-2">Example {index + 1}:</h4>
                           <div className="space-y-2 text-sm font-mono">

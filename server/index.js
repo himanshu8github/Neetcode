@@ -7,6 +7,7 @@ const authRouter = require("./routes/userRoute");
 const problemRouter = require('./routes/problemRoute')
 const submitRouter = require("./routes/codeSubmitByUser");
 const cors = require('cors');
+const aiRouter = require("./routes/aiChat")
 
 
 const app = express();
@@ -23,6 +24,7 @@ app.use(cors({
 app.use('/user', authRouter);
 app.use('/problem', problemRouter);
 app.use('/submission', submitRouter);
+app.use("/ai", aiRouter)
 
 const initialiseConnection = async () => {
     try {
