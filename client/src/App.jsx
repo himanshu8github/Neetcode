@@ -1,6 +1,7 @@
 import {Routes, Route ,Navigate} from "react-router";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
+// import Login from "./pages/Login";
+// import Signup from "./pages/Signup";
+import AuthPage from './pages/AuthPage'
 import Homepage from "./pages/Homepage";
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from "./authSlice";
@@ -31,9 +32,10 @@ function App(){
   return(
   <>
     <Routes>
-      <Route path="/" element={isAuthenticated ?<Homepage></Homepage>:<Navigate to="/signup" />}></Route>
-      <Route path="/login" element={isAuthenticated?<Navigate to="/" />:<Login></Login>}></Route>
-      <Route path="/signup" element={isAuthenticated?<Navigate to="/" />:<Signup></Signup>}></Route>
+     <Route path="/" element={isAuthenticated ?<Homepage></Homepage>:<Navigate to="/auth" />}></Route>
+      <Route path="/auth" element={isAuthenticated ? <Navigate to="/" /> : <AuthPage />} />
+      {/* <Route path="/login" element={isAuthenticated?<Navigate to="/" />:<Login></Login>}></Route>
+      <Route path="/signup" element={isAuthenticated?<Navigate to="/" />:<Signup></Signup>}></Route> */}
       <Route path="/admin" element={isAuthenticated && user?.role === 'admin' ? <Admin /> : <Navigate to="/" />} />
       <Route path="/admin/create" element={isAuthenticated && user?.role === 'admin' ? <AdminPanel /> : <Navigate to="/" />} />
       <Route path="/admin/delete" element={isAuthenticated && user?.role === 'admin' ? <AdminDelete /> : <Navigate to="/" />} />
