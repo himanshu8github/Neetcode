@@ -2,7 +2,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axiosClient from '../utils/axiosClient';
-import { useNavigate } from 'react-router';
+import { useNavigate, NavLink } from 'react-router';
 import { Plus, Trash2, Code2 } from 'lucide-react';
 
 // Zod schema matching the problem schema
@@ -92,18 +92,23 @@ function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40">
-        <div className="container mx-auto px-4 md:px-8 py-6">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-gradient-to-br from-sky-500 to-sky-600 p-2 rounded-lg">
-              <Code2 className="w-6 h-6" />
+      {/* Navbar */}
+      <nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 h-16">
+        <div className="h-full px-4 md:px-8 flex items-center justify-between">
+          <NavLink to="/admin" className="flex items-center gap-2 hover:opacity-80 transition group">
+            <span className="text-slate-400 group-hover:text-sky-400 transition font-medium">← Back</span>
+          </NavLink>
+          
+          <div className="flex items-center gap-2">
+            <div className="bg-gradient-to-br from-sky-500 to-sky-600 p-2 rounded">
+              <Code2 className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl font-bold">Create New <span className="text-sky-500">Problem</span></h1>
+            <span className="text-xl font-bold">Create <span className="text-sky-500">Problem</span></span>
           </div>
-          <p className="text-slate-400">Add DSA problems for CodeMatrix</p>
+
+          <div className="text-slate-400 text-sm">New Problem</div>
         </div>
-      </div>
+      </nav>
 
       {/* Main Content */}
       <div className="container mx-auto px-4 md:px-8 py-8">
