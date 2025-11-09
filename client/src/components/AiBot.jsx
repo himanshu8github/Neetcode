@@ -5,12 +5,10 @@ import { Send } from 'lucide-react';
 
 function AiBot({problem}) {
     const [messages, setMessages] = useState([
-   { role: 'assistant', parts:[{text: "Hi, How can i help you?"}]},
-
-        { role: 'user', parts:[{text: ""}]}
+      { role: 'assistant', parts:[{text: "Hi, How can I help you?"}]},
     ]);
 
-    const { register, handleSubmit, reset,formState: {errors} } = useForm();
+    const { register, handleSubmit, reset, formState: {errors} } = useForm();
     const messagesEndRef = useRef(null);
 
     useEffect(() => {
@@ -18,21 +16,23 @@ function AiBot({problem}) {
     }, [messages]);
 
     const onSubmit = async (data) => {
-        
-        setMessages(prev => [...prev, { role: 'user', parts:[{text: data.message}] }]);
+        if (!data.message || data.message.trim().length === 0) return;
+
+        // Add user message
+        const userMessage = { role: 'user', parts:[{text: data.message}] };
+        setMessages(prev => [...prev, userMessage]);
         reset();
 
         try {
-            
             const response = await axiosClient.post("/ai/chat", {
-    messages: [...messages, { role: "user", parts: [{ text: data.message }] }],
-    title: problem.title,
-    description: problem.description,
-    testCases: problem.visibleTestCases,
-    startCode: problem.startCode
-});
+                messages: [...messages, userMessage],
+                title: problem.title,
+                description: problem.description,
+                testCases: problem.visibleTestCases,
+                startCode: problem.startCode
+            });
 
-           
+            // Add assistant response
             setMessages(prev => [...prev, { 
                 role: 'assistant', 
                 parts:[{text: response.data.message}] 
@@ -40,46 +40,53 @@ function AiBot({problem}) {
         } catch (error) {
             console.error("API Error:", error);
             setMessages(prev => [...prev, { 
-                role: 'model', 
-                parts:[{text: "Error from AI-bot"}]
+                role: 'assistant', 
+                parts:[{text: "Sorry, there was an error. Please try again."}]
             }]);
         }
     };
 
     return (
-        <div className="flex flex-col h-screen max-h-[80vh] min-h-[500px]">
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex flex-col h-96 bg-slate-900/50 border border-slate-800 rounded-lg overflow-hidden">
+            {/* Messages Container - Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-black">
                 {messages.map((msg, index) => (
                     <div 
                         key={index} 
-                        className={`chat ${msg.role === "user" ? "chat-end" : "chat-start"}`}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
-                        <div className="chat-bubble bg-base-200 text-base-content">
-                            {msg.parts[0].text}
+                        <div className={`max-w-xs px-4 py-2 rounded-lg ${
+                            msg.role === "user" 
+                                ? 'bg-sky-500/30 text-white border border-sky-500/50' 
+                                : 'bg-slate-800 text-slate-200 border border-slate-700'
+                        }`}>
+                            <p className="text-sm break-words whitespace-pre-wrap">
+                                {msg.parts[0].text}
+                            </p>
                         </div>
                     </div>
                 ))}
                 <div ref={messagesEndRef} />
             </div>
-            <form 
-                onSubmit={handleSubmit(onSubmit)} 
-                className="sticky bottom-0 p-4 bg-base-100 border-t"
-            >
-                <div className="flex items-center">
+
+            {/* Input Form - Fixed at Bottom */}
+            <div className="border-t border-slate-800 bg-slate-900/50 p-4 flex-shrink-0">
+                <form onSubmit={handleSubmit(onSubmit)} className="flex items-center gap-2">
                     <input 
-                        placeholder="Ask me anything" 
-                        className="input input-bordered flex-1" 
-                        {...register("message", { required: true, minLength: 2 })}
+                        placeholder="Ask me anything..." 
+                        className="flex-1 px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all"
+                        {...register("message", { required: false })}
+                        autoComplete="off"
                     />
                     <button 
                         type="submit" 
-                        className="btn btn-ghost ml-2"
+                        className="p-2.5 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white rounded-lg transition-all transform hover:scale-105 disabled:opacity-50"
                         disabled={errors.message}
                     >
-                        <Send size={20} />
+                        <Send size={18} />
                     </button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import axiosClient from '../utils/axiosClient';
+import { CheckCircle, XCircle, Clock } from 'lucide-react';
 
 const SubmissionHistory = ({ problemId }) => {
   const [submissions, setSubmissions] = useState([]);
@@ -25,13 +26,23 @@ const SubmissionHistory = ({ problemId }) => {
     fetchSubmissions();
   }, [problemId]);
 
-  const getStatusColor = (status) => {
+  const getStatusIcon = (status) => {
     switch (status) {
-      case 'accepted': return 'badge-success';
-      case 'wrong': return 'badge-error';
-      case 'error': return 'badge-warning';
-      case 'pending': return 'badge-info';
-      default: return 'badge-neutral';
+      case 'accepted': return <CheckCircle className="w-5 h-5 text-green-400" />;
+      case 'wrong': return <XCircle className="w-5 h-5 text-red-400" />;
+      case 'error': return <XCircle className="w-5 h-5 text-yellow-400" />;
+      case 'pending': return <Clock className="w-5 h-5 text-blue-400" />;
+      default: return <Clock className="w-5 h-5 text-slate-400" />;
+    }
+  };
+
+  const getStatusBg = (status) => {
+    switch (status) {
+      case 'accepted': return 'bg-green-500/10 text-green-400 border-green-500/30';
+      case 'wrong': return 'bg-red-500/10 text-red-400 border-red-500/30';
+      case 'error': return 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30';
+      case 'pending': return 'bg-blue-500/10 text-blue-400 border-blue-500/30';
+      default: return 'bg-slate-500/10 text-slate-400 border-slate-500/30';
     }
   };
 
@@ -47,74 +58,66 @@ const SubmissionHistory = ({ problemId }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <span className="loading loading-spinner loading-lg"></span>
+        <span className="loading loading-spinner loading-lg text-sky-500"></span>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="alert alert-error shadow-lg my-4">
-        <div>
-          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>{error}</span>
-        </div>
+      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400">
+        <p>{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-6 text-center">Submission History</h2>
+    <div className="space-y-4">
+      <h2 className="text-2xl font-bold text-white">Submission History</h2>
       
       {submissions.length === 0 ? (
-        <div className="alert alert-info shadow-lg">
-          <div>
-            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>No submissions found for this problem</span>
-          </div>
+        <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-8 text-center">
+          <p className="text-slate-400">No submissions found</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto">
-            <table className="table table-zebra w-full">
+          <div className="overflow-x-auto bg-slate-900/50 border border-slate-800 rounded-lg">
+            <table className="w-full">
               <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Language</th>
-                  <th>Status</th>
-                  <th>Runtime</th>
-                  <th>Memory</th>
-                  <th>Test Cases</th>
-                  <th>Submitted</th>
-                  <th>Actions</th>
+                <tr className="border-b border-slate-700 bg-slate-900/80">
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">#</th>
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">Language</th>
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">Status</th>
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">Runtime</th>
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">Memory</th>
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">Test Cases</th>
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">Submitted</th>
+                  <th className="px-4 py-3 text-left text-sky-400 font-semibold">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {submissions.map((sub, index) => (
-                  <tr key={sub._id}>
-                    <td>{index + 1}</td>
-                    <td className="font-mono">{sub.language}</td>
-                    <td>
-                      <span className={`badge ${getStatusColor(sub.status)}`}>
-                        {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
-                      </span>
+                  <tr key={sub._id} className="border-b border-slate-800 hover:bg-slate-800/50 transition-all">
+                    <td className="px-4 py-3 text-slate-300 font-mono">{index + 1}</td>
+                    <td className="px-4 py-3 text-slate-300 font-mono">{sub.language}</td>
+                    <td className="px-4 py-3">
+                      <div className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg border ${getStatusBg(sub.status)}`}>
+                        {getStatusIcon(sub.status)}
+                        <span className="font-medium text-sm">
+                          {sub.status.charAt(0).toUpperCase() + sub.status.slice(1)}
+                        </span>
+                      </div>
                     </td>
-                    
-                    <td className="font-mono">{sub.runtime}sec</td>
-                    <td className="font-mono">{formatMemory(sub.memory)}</td>
-                    <td className="font-mono">{sub.testCasesPassed}/{sub.testCasesTotal}</td>
-                    <td>{formatDate(sub.createdAt)}</td>
-                    <td>
+                    <td className="px-4 py-3 text-slate-300 font-mono text-sm">{sub.runtime}s</td>
+                    <td className="px-4 py-3 text-slate-300 font-mono text-sm">{formatMemory(sub.memory)}</td>
+                    <td className="px-4 py-3 text-slate-300 font-mono text-sm">{sub.testCasesPassed}/{sub.testCasesTotal}</td>
+                    <td className="px-4 py-3 text-slate-400 text-sm">{formatDate(sub.createdAt)}</td>
+                    <td className="px-4 py-3">
                       <button 
-                        className="btn btn-s btn-outline"
+                        className="px-3 py-1.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 border border-sky-500/30 rounded text-sm font-medium transition-all"
                         onClick={() => setSelectedSubmission(sub)}
                       >
-                        Code
+                        View
                       </button>
                     </td>
                   </tr>
@@ -123,56 +126,59 @@ const SubmissionHistory = ({ problemId }) => {
             </table>
           </div>
 
-          <p className="mt-4 text-sm text-gray-500">
-            Showing {submissions.length} submissions
+          <p className="text-sm text-slate-400 mt-4">
+            Showing <span className="text-sky-400 font-semibold">{submissions.length}</span> submissions
           </p>
         </>
       )}
 
       {/* Code View Modal */}
       {selectedSubmission && (
-        <div className="modal modal-open">
-          <div className="modal-box w-11/12 max-w-5xl">
-            <h3 className="font-bold text-lg mb-4">
-              Submission Details: {selectedSubmission.language}
-            </h3>
-            
-            <div className="mb-4">
-              <div className="flex flex-wrap gap-2 mb-2">
-                <span className={`badge ${getStatusColor(selectedSubmission.status)}`}>
-                  {selectedSubmission.status}
-                </span>
-                <span className="badge badge-outline">
-                  Runtime: {selectedSubmission.runtime}s
-                </span>
-                <span className="badge badge-outline">
-                  Memory: {formatMemory(selectedSubmission.memory)}
-                </span>
-                <span className="badge badge-outline">
-                  Passed: {selectedSubmission.testCasesPassed}/{selectedSubmission.testCasesTotal}
-                </span>
-              </div>
-              
-              {selectedSubmission.errorMessage && (
-                <div className="alert alert-error mt-2">
-                  <div>
-                    <span>{selectedSubmission.errorMessage}</span>
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+            <div className="sticky top-0 bg-slate-900/95 border-b border-slate-800 p-6 flex justify-between items-center">
+              <div>
+                <h3 className="font-bold text-lg text-white mb-2">
+                  Submission: {selectedSubmission.language}
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  <div className={`flex items-center gap-2 w-fit px-3 py-1 rounded-lg border text-sm ${getStatusBg(selectedSubmission.status)}`}>
+                    {getStatusIcon(selectedSubmission.status)}
+                    <span className="font-medium">
+                      {selectedSubmission.status.charAt(0).toUpperCase() + selectedSubmission.status.slice(1)}
+                    </span>
+                  </div>
+                  <div className="px-3 py-1 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400 text-sm font-mono">
+                    Runtime: {selectedSubmission.runtime}s
+                  </div>
+                  <div className="px-3 py-1 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400 text-sm font-mono">
+                    Memory: {formatMemory(selectedSubmission.memory)}
+                  </div>
+                  <div className="px-3 py-1 rounded-lg border border-sky-500/30 bg-sky-500/10 text-sky-400 text-sm font-mono">
+                    {selectedSubmission.testCasesPassed}/{selectedSubmission.testCasesTotal}
                   </div>
                 </div>
-              )}
-            </div>
-            
-            <pre className="p-4 bg-gray-900 text-gray-100 rounded overflow-x-auto">
-              <code>{selectedSubmission.code}</code>
-            </pre>
-            
-            <div className="modal-action">
+              </div>
               <button 
-                className="btn"
+                className="text-slate-400 hover:text-white transition-all text-2xl"
                 onClick={() => setSelectedSubmission(null)}
               >
-                Close
+                ✕
               </button>
+            </div>
+            
+            {selectedSubmission.errorMessage && (
+              <div className="m-6 p-4 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
+                <p className="font-semibold mb-2">Error:</p>
+                <p>{selectedSubmission.errorMessage}</p>
+              </div>
+            )}
+            
+            <div className="p-6">
+              <p className="text-slate-400 text-sm mb-3">Code:</p>
+              <pre className="p-4 bg-black border border-slate-800 rounded overflow-x-auto text-sm text-slate-300 font-mono">
+                <code>{selectedSubmission.code}</code>
+              </pre>
             </div>
           </div>
         </div>

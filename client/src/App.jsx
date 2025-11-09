@@ -6,7 +6,7 @@ import Homepage from "./pages/Homepage";
 import { useDispatch, useSelector } from 'react-redux';
 import { checkAuth } from "./authSlice";
 import { useEffect } from "react";
-import AdminPanel from "./components/AdminPanel";
+import AdminPanel from "./pages/AdminPanel";
 import ProblemPage from "./pages/ProblemPage"
 import Admin from "./pages/Admin";
 // import AdminVideo from "./components/AdminVideo"
