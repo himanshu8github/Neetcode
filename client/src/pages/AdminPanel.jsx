@@ -222,24 +222,29 @@ function AdminPanel() {
                       </button>
                     </div>
                     
-                    <input
-                      {...register(`visibleTestCases.${index}.input`)}
-                      placeholder="Input"
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all"
-                    />
-                    
-                    <input
-                      {...register(`visibleTestCases.${index}.output`)}
-                      placeholder="Output"
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all"
-                    />
-                    
-                    <textarea
-                      {...register(`visibleTestCases.${index}.explanation`)}
-                      placeholder="Explanation"
-                      rows={3}
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all resize-none"
-                    />
+               {/* INPUT (textarea) */}
+<textarea
+  {...register(`visibleTestCases.${index}.input`)}
+  placeholder="Input"
+  rows={5}
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all resize-none"
+/>
+
+{/* OUTPUT (single line input is fine) */}
+<input
+  {...register(`visibleTestCases.${index}.output`)}
+  placeholder="Output"
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all"
+/>
+
+{/* EXPLANATION (textarea) */}
+<textarea
+  {...register(`visibleTestCases.${index}.explanation`)}
+  placeholder="Explanation"
+  rows={3}
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all resize-none"
+/>
+
                   </div>
                 ))}
               </div>
@@ -273,11 +278,13 @@ function AdminPanel() {
                       </button>
                     </div>
                     
-                    <input
-                      {...register(`hiddenTestCases.${index}.input`)}
-                      placeholder="Input"
-                      className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all"
-                    />
+                   <textarea
+  {...register(`hiddenTestCases.${index}.input`)}
+  placeholder="Input"
+  rows={5}
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500/20 transition-all resize-none"
+/>
+
                     
                     <input
                       {...register(`hiddenTestCases.${index}.output`)}
