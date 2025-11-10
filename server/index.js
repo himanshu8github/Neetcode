@@ -19,6 +19,11 @@ app.use(cors({
   credentials: true,
 }));
 
+
+app.get("/", (req, res) => {
+  res.send(" CodeMatrix Backend is Running...");
+});
+
 //routes
 app.use('/user', authRouter);
 app.use('/problem', problemRouter);
