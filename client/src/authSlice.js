@@ -30,7 +30,8 @@ export const loginUser = createAsyncThunk(
     } catch (error) {
 
         console.log("LOGIN ERROR:", error.response ? error.response.data : error.message);  // <-- ADD THIS LINE
-    return thunkAPI.rejectWithValue(error.response?.data || "Login Failed")
+   return rejectWithValue(error.response?.data || "Login Failed")
+
     }
   }
 );
