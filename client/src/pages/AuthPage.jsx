@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
 import { loginUser, registerUser } from '../authSlice';
 import { Mail, Lock, User, Eye, EyeOff, Code2, Zap } from 'lucide-react';
+import SocialFooter from '../components/Social'
 
 // Validation Schemas (unchanged)
 const loginSchema = z.object({
@@ -95,7 +96,7 @@ function AuthPage() {
 
             {/* Text */}
             <div className="text-center space-y-6 animate-fade-in-up">
-              <p className="text-slate-400 text-sm tracking-widest uppercase animate-pulse">
+              <p className="text-slate-400 text-xl font-bold tracking-widest uppercase animate-pulse">
                 Welcome back
               </p>
               <h2 className="text-5xl font-extrabold text-white leading-tight">to</h2>
@@ -125,20 +126,29 @@ function AuthPage() {
             <div className="relative rounded-3xl p-[2px] bg-gradient-to-r from-sky-500 via-blue-600 to-purple-600 animate-gradient shadow-[0_10px_60px_rgba(59,130,246,0.25)]">
               <div className="rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 p-8">
                 {/* Header */}
-                <div className="text-center mb-8">
-                  <div className="flex items-center justify-center gap-2 mb-4 animate-fade-in">
-                    <div className="relative">
-                      <div className="absolute inset-0 bg-sky-500/30 blur-lg rounded-xl" />
-                      <div className="relative bg-gradient-to-br from-sky-500 to-sky-600 p-2 rounded-xl shadow-lg">
-                        <Code2 className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <h1 className="text-3xl font-bold text-white">
-                      Code<span className="text-sky-500">Matrix</span>
-                    </h1>
-                  </div>
-                  <p className="text-slate-400 text-sm">Master DSA with AI-powered guidance</p>
-                </div>
+                {/* Header */}
+<div className="text-center mb-8">
+  <div className="flex items-center justify-center gap-2 mb-4 animate-fade-in">
+    <div className="relative">
+      <div className="absolute inset-0 bg-sky-500/30 blur-lg rounded-xl" />
+      <div className="relative bg-gradient-to-br from-sky-500 to-sky-600 p-2 rounded-xl shadow-lg">
+        <Code2 className="w-6 h-6 text-white" />
+      </div>
+    </div>
+    <h1 className="text-3xl font-bold text-white">
+      Code<span className="text-sky-500">Matrix</span>
+    </h1>
+  </div>
+  
+  {/* Larger animated welcome text */}
+  <p className="text-slate-300 text-lg font-semibold mb-3 animate-fade-in-up">
+    Welcome Back
+  </p>
+  
+  <p className="text-slate-400 text-sm">Master DSA with AI-powered guidance</p>
+
+</div>
+               
 
                 {/* Toggle Slider */}
                 <div className="flex gap-1 bg-slate-900/70 p-1 rounded-xl mb-6 border border-slate-800 backdrop-blur-sm shadow-inner">
@@ -146,7 +156,7 @@ function AuthPage() {
                     onClick={() => !isSignUp && toggleForm()}
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
                       !isSignUp
-                        ? 'bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-500/40 scale-100'
+                        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
                         : 'text-slate-400 hover:text-slate-200 scale-95'
                     }`}
                   >
@@ -156,7 +166,7 @@ function AuthPage() {
                     onClick={() => isSignUp && toggleForm()}
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
                       isSignUp
-                        ? 'bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-lg shadow-sky-500/40 scale-100'
+                        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
                         : 'text-slate-400 hover:text-slate-200 scale-95'
                     }`}
                   >
@@ -165,7 +175,7 @@ function AuthPage() {
                 </div>
 
                 {/* Forms Container (same height, animated swap) */}
-                <div className="relative h-96 sm:h-[420px]">
+                <div className="relative h-96 sm:h-[325px]">
                   {/* Sign In Form */}
                   <div
                     className={`absolute inset-0 transition-all duration-700 ease-out ${
@@ -175,7 +185,7 @@ function AuthPage() {
                     <form onSubmit={handleLoginSubmit(onLoginSubmit)} className="space-y-4">
                       {/* Email */}
                       <div className="animate-fade-in" style={{ animationDelay: '0ms' }}>
-                        <label className="block text-sm font-medium text-white mb-2">Email</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
                         <div className="relative group">
                           <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
                           <input
@@ -195,7 +205,7 @@ function AuthPage() {
 
                       {/* Password */}
                       <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-                        <label className="block text-sm font-medium text-white mb-2">Password</label>
+                        <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
                         <div className="relative group">
                           <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
                           <input
@@ -224,7 +234,7 @@ function AuthPage() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 transform hover:scale-[1.02] active:scale-[0.99] shadow-lg shadow-sky-500/30 animate-fade-in"
+                        className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 transform hover:scale-[1.02] active:scale-[0.99] shadow-lg shadow-sky-500/30 animate-fade-in"
                         style={{ animationDelay: '200ms' }}
                       >
                         {loading ? (
@@ -317,7 +327,7 @@ function AuthPage() {
                       <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 transform hover:scale-[1.02] active:scale-[0.99] shadow-lg shadow-sky-500/30 animate-fade-in"
+                        className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 transform hover:scale-[1.02] active:scale-[0.99] shadow-lg shadow-sky-500/30 animate-fade-in"
                         style={{ animationDelay: '300ms' }}
                       >
                         {loading ? (
@@ -333,10 +343,10 @@ function AuthPage() {
                   </div>
                 </div>
 
-                {/* Small Tagline */}
+                {/* Small Tagline
                 <p className="text-center text-slate-500 text-xs mt-6">
                   Superfast • Secure • AI-Assisted Learning
-                </p>
+                </p> */}
               </div>
             </div>
           </div>
