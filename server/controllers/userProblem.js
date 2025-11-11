@@ -223,8 +223,8 @@ const updateProblem = async (req, res) => {
 
         const updates = req.body;
 
-        //  Only validate reference solution if it exists
-        if (updates.referenceSolution) {
+
+       if (updates.referenceSolution && updates.referenceSolution.length > 0)  {
 
             if (!updates.visibleTestCases) {
                 return res.status(400).send("Visible test cases required to validate reference solutions");

@@ -4,40 +4,44 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import axiosClient from '../utils/axiosClient';
 import { useNavigate, NavLink } from 'react-router';
-import { Plus, Trash2, Code2, Search, CheckCircle } from 'lucide-react';
+import { Plus, Trash2, Code2, Search, CheckCircle, X, AlertCircle } from 'lucide-react';
 
-// Zod schema
-const problemSchema = z.object({
-  title: z.string().min(1, 'Title is required'),
-  description: z.string().min(1, 'Description is required'),
-  difficulty: z.enum(['easy', 'medium', 'hard']),
-  tags: z.enum(['array', 'linkedList', 'graph', 'dp']),
+const updateProblemSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
+  tags: z.enum(['array', 'linkedList', 'graph', 'dp']).optional(),
+
   visibleTestCases: z.array(
     z.object({
-      input: z.string().min(1, 'Input is required'),
-      output: z.string().min(1, 'Output is required'),
-      explanation: z.string().min(1, 'Explanation is required')
+      input: z.string(),
+      output: z.string(),
+      explanation: z.string(),
     })
-  ).min(1, 'At least one visible test case required'),
+  ).optional(),
+
   hiddenTestCases: z.array(
     z.object({
-      input: z.string().min(1, 'Input is required'),
-      output: z.string().min(1, 'Output is required')
+      input: z.string(),
+      output: z.string(),
     })
-  ).min(1, 'At least one hidden test case required'),
+  ).optional(),
+
   startCode: z.array(
     z.object({
       language: z.enum(['C++', 'Java', 'JavaScript']),
-      initialCode: z.string().min(1, 'Initial code is required')
+      initialCode: z.string(),
     })
-  ).length(3, 'All three languages required'),
+  ).optional(),
+
   referenceSolution: z.array(
     z.object({
       language: z.enum(['C++', 'Java', 'JavaScript']),
-      completeCode: z.string().min(1, 'Complete code is required')
+      completeCode: z.string(),
     })
-  ).length(3, 'All three languages required')
+  ).optional(),
 });
+
 
 function AdminUpdate() {
   const navigate = useNavigate();
@@ -46,6 +50,14 @@ function AdminUpdate() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [updating, setUpdating] = useState(false);
+  
+  // Popup states
+  const [popup, setPopup] = useState({
+    show: false,
+    type: 'success', // 'success' or 'error'
+    message: '',
+    title: ''
+  });
 
   const {
     register,
@@ -54,7 +66,7 @@ function AdminUpdate() {
     reset,
     formState: { errors }
   } = useForm({
-    resolver: zodResolver(problemSchema),
+    resolver: zodResolver(updateProblemSchema),
   });
 
   const {
@@ -80,6 +92,16 @@ function AdminUpdate() {
     fetchProblems();
   }, []);
 
+  // Auto-close popup after 3 seconds
+  useEffect(() => {
+    if (popup.show) {
+      const timer = setTimeout(() => {
+        setPopup({ ...popup, show: false });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [popup.show]);
+
   const fetchProblems = async () => {
     try {
       setLoading(true);
@@ -95,30 +117,76 @@ function AdminUpdate() {
   // Select problem to edit
   const handleSelectProblem = (problem) => {
     setSelectedProblem(problem);
-    reset({
-      title: problem.title,
-      description: problem.description,
-      difficulty: problem.difficulty,
-      tags: problem.tags,
-      visibleTestCases: problem.visibleTestCases,
-      hiddenTestCases: problem.hiddenTestCases,
-      startCode: problem.startCode,
-      referenceSolution: problem.referenceSolution
+    
+    // Ensure all arrays exist
+    const formData = {
+      title: problem.title || '',
+      description: problem.description || '',
+      difficulty: problem.difficulty || 'easy',
+      tags: problem.tags || 'array',
+      visibleTestCases: problem.visibleTestCases || [],
+      hiddenTestCases: problem.hiddenTestCases || [],
+      startCode: problem.startCode || [
+        { language: 'C++', initialCode: '' },
+        { language: 'Java', initialCode: '' },
+        { language: 'JavaScript', initialCode: '' }
+      ],
+      referenceSolution: problem.referenceSolution || [
+        { language: 'C++', completeCode: '' },
+        { language: 'Java', completeCode: '' },
+        { language: 'JavaScript', completeCode: '' }
+      ]
+    };
+    
+    reset(formData);
+  };
+
+  const showPopup = (type, title, message) => {
+    setPopup({
+      show: true,
+      type,
+      title,
+      message
     });
   };
 
   // Update problem
   const onSubmit = async (data) => {
-    if (!selectedProblem) return;
-    
+    if (!selectedProblem) {
+      showPopup('error', 'Error!', 'No problem selected');
+      return;
+    }
+
     try {
       setUpdating(true);
-      await axiosClient.put(`/problem/update/${selectedProblem._id}`, data);
-      alert('Problem updated successfully!');
-      setSelectedProblem(null);
-      fetchProblems();
+
+      // Remove empty or unchanged fields
+      const cleanedData = Object.fromEntries(
+        Object.entries(data).filter(([key, value]) => {
+          return value !== undefined && value !== "" && value !== null;
+        })
+      );
+
+      // Remove empty arrays - check if all items are empty
+      if (cleanedData.visibleTestCases?.every(tc => !tc.input && !tc.output && !tc.explanation)) delete cleanedData.visibleTestCases;
+      if (cleanedData.hiddenTestCases?.every(tc => !tc.input && !tc.output)) delete cleanedData.hiddenTestCases;
+      if (cleanedData.startCode?.every(sc => !sc.initialCode)) delete cleanedData.startCode;
+      if (cleanedData.referenceSolution?.every(rs => !rs.completeCode)) delete cleanedData.referenceSolution;
+
+      const response = await axiosClient.patch(`/problem/update/${selectedProblem._id}`, cleanedData);
+
+      // Show success popup
+      showPopup('success', '✓ Success!', `"${selectedProblem.title}" has been updated successfully.`);
+      
+      // Redirect after popup auto-closes
+      setTimeout(() => {
+        setSelectedProblem(null);
+        fetchProblems();
+      }, 1500);
     } catch (error) {
-      alert(`Error: ${error.response?.data?.message || error.message}`);
+      // Show error popup
+      const errorMsg = error.response?.data || error.message || 'Something went wrong!';
+      showPopup('error', '✗ Update Failed!', String(errorMsg));
     } finally {
       setUpdating(false);
     }
@@ -138,6 +206,70 @@ function AdminUpdate() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Success/Error Popup */}
+      {popup.show && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          {/* Backdrop */}
+          <div 
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setPopup({ ...popup, show: false })}
+          />
+          
+          {/* Popup Card */}
+          <div className={`relative max-w-sm w-full rounded-2xl border-2 p-8 shadow-2xl transform transition-all duration-300 ${
+            popup.type === 'success' 
+              ? 'bg-green-950/90 border-green-500/50' 
+              : 'bg-red-950/90 border-red-500/50'
+          }`}>
+            {/* Close Button */}
+            <button
+              onClick={() => setPopup({ ...popup, show: false })}
+              className="absolute top-4 right-4 p-1 hover:bg-white/10 rounded-lg transition-all"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-6">
+              <div className={`p-4 rounded-full ${
+                popup.type === 'success'
+                  ? 'bg-green-500/20'
+                  : 'bg-red-500/20'
+              }`}>
+                {popup.type === 'success' ? (
+                  <CheckCircle className={`w-8 h-8 ${popup.type === 'success' ? 'text-green-400' : 'text-red-400'}`} />
+                ) : (
+                  <AlertCircle className={`w-8 h-8 ${popup.type === 'success' ? 'text-green-400' : 'text-red-400'}`} />
+                )}
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className={`text-2xl font-bold text-center mb-3 ${
+              popup.type === 'success' ? 'text-green-400' : 'text-red-400'
+            }`}>
+              {popup.title}
+            </h2>
+
+            {/* Message */}
+            <p className="text-center text-slate-300 mb-6 text-sm leading-relaxed">
+              {popup.message}
+            </p>
+
+            {/* Progress Bar */}
+            <div className={`h-1 rounded-full overflow-hidden ${
+              popup.type === 'success' ? 'bg-green-500/20' : 'bg-red-500/20'
+            }`}>
+              <div className={`h-full ${
+                popup.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+              } animate-pulse`} style={{
+                animation: 'slideOut 3s ease-in forwards'
+              }}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Navbar */}
       <nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 h-16">
         <div className="h-full px-4 md:px-8 flex items-center justify-between">
@@ -217,7 +349,7 @@ function AdminUpdate() {
               ← Back to List
             </button>
 
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 max-w-4xl">
+            <div className="space-y-8 max-w-4xl">
               {/* Basic Information */}
               <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-8">
                 <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -230,6 +362,7 @@ function AdminUpdate() {
                     <label className="block text-sm font-semibold text-slate-300 mb-2">Title</label>
                     <input
                       {...register('title')}
+                      placeholder="Edit title..."
                       className={`w-full px-4 py-3 bg-slate-900 border rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 transition-all ${
                         errors.title ? 'border-red-500' : 'border-slate-700'
                       }`}
@@ -258,6 +391,7 @@ function AdminUpdate() {
                           errors.difficulty ? 'border-red-500' : 'border-slate-700'
                         }`}
                       >
+                        <option value="">Select difficulty</option>
                         <option value="easy">Easy</option>
                         <option value="medium">Medium</option>
                         <option value="hard">Hard</option>
@@ -272,6 +406,7 @@ function AdminUpdate() {
                           errors.tags ? 'border-red-500' : 'border-slate-700'
                         }`}
                       >
+                        <option value="">Select tag</option>
                         <option value="array">Array</option>
                         <option value="linkedList">Linked List</option>
                         <option value="graph">Graph</option>
@@ -317,21 +452,19 @@ function AdminUpdate() {
                           </button>
                         </div>
                         
-                       <textarea
-  {...register(`visibleTestCases.${index}.input`)}
-  placeholder="Input"
-  rows={4}
-  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
-/>
-
+                        <textarea
+                          {...register(`visibleTestCases.${index}.input`)}
+                          placeholder="Input"
+                          rows={4}
+                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                        />
                         
-                       <textarea
-  {...register(`visibleTestCases.${index}.output`)}
-  placeholder="Output"
-  rows={3}
-  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
-/>
-
+                        <textarea
+                          {...register(`visibleTestCases.${index}.output`)}
+                          placeholder="Output"
+                          rows={3}
+                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                        />
                         
                         <textarea
                           {...register(`visibleTestCases.${index}.explanation`)}
@@ -372,21 +505,19 @@ function AdminUpdate() {
                           </button>
                         </div>
                         
-                      <textarea
-  {...register(`hiddenTestCases.${index}.input`)}
-  placeholder="Input"
-  rows={4}
-  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
-/>
-
+                        <textarea
+                          {...register(`hiddenTestCases.${index}.input`)}
+                          placeholder="Input"
+                          rows={4}
+                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                        />
                         
-                      <textarea
-  {...register(`hiddenTestCases.${index}.output`)}
-  placeholder="Output"
-  rows={3}
-  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
-/>
-
+                        <textarea
+                          {...register(`hiddenTestCases.${index}.output`)}
+                          placeholder="Output"
+                          rows={3}
+                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+                        />
                       </div>
                     ))}
                   </div>
@@ -441,7 +572,8 @@ function AdminUpdate() {
               {/* Submit Button */}
               <div className="flex gap-4">
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={() => handleSubmit(onSubmit)()}
                   disabled={updating}
                   className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg shadow-blue-500/30 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
@@ -449,7 +581,7 @@ function AdminUpdate() {
                   {updating ? 'Updating...' : 'Update Problem'}
                 </button>
               </div>
-            </form>
+            </div>
           </>
         )}
       </div>
@@ -467,6 +599,11 @@ function AdminUpdate() {
         }
         textarea::-webkit-scrollbar-thumb:hover {
           background: #64748b;
+        }
+
+        @keyframes slideOut {
+          0% { width: 100%; }
+          100% { width: 0%; }
         }
       `}</style>
     </div>
