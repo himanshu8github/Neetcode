@@ -175,7 +175,7 @@ function AuthPage() {
                 </div>
 
                 {/* Forms Container (same height, animated swap) */}
-                <div className="relative h-96 sm:h-[325px]">
+                <div className="relative h-96 sm:h-[315px]">
                   {/* Sign In Form */}
                   <div
                     className={`absolute inset-0 transition-all duration-700 ease-out ${
