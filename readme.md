@@ -31,7 +31,7 @@ A modern, interactive coding platform designed to make learning DSA engaging, ef
 
 ## 🛠️ Technology Stack
 
-### Frontend Arsenal
+### Frontend 
 React.js • Tailwind CSS • DaisyUI • Monaco Editor • Redux • React Hook Form • Axios • Lucide Icons
 
 ### Backend Power
