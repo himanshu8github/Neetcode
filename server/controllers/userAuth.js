@@ -42,7 +42,14 @@ const register = async(req, res) => {
     }
      
 
-       res.cookie('token', token, {maxAge: 60*60*1000}); // in milisec
+  res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,
+  sameSite: "none",
+  maxAge: 60 * 60 * 1000,
+  path: "/"
+});
+ // in milisec
         res.status(200).json({
         user : reply,
         message : "User Registered sucessfully"
@@ -85,12 +92,14 @@ const login = async (req, res) => {
     }
      
        const token = jwt.sign({_id:user._id, emailId:emailId, role: user.role }, process.env.JWT_KEY , {expiresIn: 60*60}) // sec
-      res.cookie('token', token, {
-    maxAge: 60 * 60 * 1000,
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: false
+     res.cookie("token", token, {
+  httpOnly: true,
+  secure: true,     // required for https
+  sameSite: "none", // required for cross-site cookies
+  maxAge: 60 * 60 * 1000,
+  path: "/"
 });
+
 
        res.status(200).json({
         user : reply,

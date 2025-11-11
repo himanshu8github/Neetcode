@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use(cors({
-  origin: [process.env.FRONTEND_URL, "http://localhost:5173"],
+  origin: [process.env.FRONTEND_URL, "http://localhost:5173",  "https://code-matrix-one.vercel.app"],
   credentials: true,
 }));
 
