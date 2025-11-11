@@ -53,8 +53,8 @@ const userCodeSubmit = async (req, res) => {
     const submissions = problem.hiddenTestCases.map((testcase)=>({
         source_code:code,
         language_id: languageId,
-        stdin: testcase.input,
-        expected_output: testcase.output
+          stdin: testcase.input.trim().split(" ").join("\n"),
+      _output: testcase.output
     }));
 
       const submitResult = await submitBatch(submissions);
@@ -149,7 +149,7 @@ const runCode = async(req,res)=>{
    const submissions = problem.visibleTestCases.map((testcase)=>({
        source_code:code,
        language_id: languageId,
-       stdin: testcase.input,
+        stdin: testcase.input.trim().split(" ").join("\n"),
        expected_output: testcase.output
    }));
 
