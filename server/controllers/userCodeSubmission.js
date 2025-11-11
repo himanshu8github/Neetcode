@@ -50,12 +50,15 @@ const userCodeSubmit = async (req, res) => {
     
     const languageId = getLanguageById(language);
    
-    const submissions = problem.hiddenTestCases.map((testcase)=>({
-        source_code:code,
-        language_id: languageId,
-          stdin: testcase.input.trim().split(" ").join("\n"),
-      _output: testcase.output
-    }));
+  const actualCode = completeCode.replace(/\\n/g, '\n');
+
+const submissions = visibleTestCases.map((testcase) => ({
+    source_code: Buffer.from(actualCode).toString("base64"),
+    language_id: languageId,
+    stdin: Buffer.from(testcase.input).toString("base64"),
+    expected_output: Buffer.from(testcase.output).toString("base64")
+}));
+
 
       const submitResult = await submitBatch(submissions);
     
@@ -146,12 +149,15 @@ const runCode = async(req,res)=>{
 
    const languageId = getLanguageById(language);
 
-   const submissions = problem.visibleTestCases.map((testcase)=>({
-       source_code:code,
-       language_id: languageId,
-        stdin: testcase.input.trim().split(" ").join("\n"),
-       expected_output: testcase.output
-   }));
+  const actualCode = completeCode.replace(/\\n/g, '\n');
+
+const submissions = visibleTestCases.map((testcase) => ({
+    source_code: Buffer.from(actualCode).toString("base64"),
+    language_id: languageId,
+    stdin: Buffer.from(testcase.input).toString("base64"),
+    expected_output: Buffer.from(testcase.output).toString("base64")
+}));
+
 
 
    const submitResult = await submitBatch(submissions);

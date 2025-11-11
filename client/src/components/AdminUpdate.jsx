@@ -317,17 +317,21 @@ function AdminUpdate() {
                           </button>
                         </div>
                         
-                        <input
-                          {...register(`visibleTestCases.${index}.input`)}
-                          placeholder="Input"
-                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                        />
+                       <textarea
+  {...register(`visibleTestCases.${index}.input`)}
+  placeholder="Input"
+  rows={4}
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+/>
+
                         
-                        <input
-                          {...register(`visibleTestCases.${index}.output`)}
-                          placeholder="Output"
-                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                        />
+                       <textarea
+  {...register(`visibleTestCases.${index}.output`)}
+  placeholder="Output"
+  rows={3}
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+/>
+
                         
                         <textarea
                           {...register(`visibleTestCases.${index}.explanation`)}
@@ -368,17 +372,21 @@ function AdminUpdate() {
                           </button>
                         </div>
                         
-                        <input
-                          {...register(`hiddenTestCases.${index}.input`)}
-                          placeholder="Input"
-                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                        />
+                      <textarea
+  {...register(`hiddenTestCases.${index}.input`)}
+  placeholder="Input"
+  rows={4}
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+/>
+
                         
-                        <input
-                          {...register(`hiddenTestCases.${index}.output`)}
-                          placeholder="Output"
-                          className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all"
-                        />
+                      <textarea
+  {...register(`hiddenTestCases.${index}.output`)}
+  placeholder="Output"
+  rows={3}
+  className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 transition-all resize-none"
+/>
+
                       </div>
                     ))}
                   </div>

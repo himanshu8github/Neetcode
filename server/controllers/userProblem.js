@@ -134,80 +134,142 @@ const submissions = visibleTestCases.map((testcase) => ({
 
 
 // for updating problem using id
-const updateProblem = async (req, res) => {
+// const updateProblem = async (req, res) => {
 
-    const {id} = req.params;
+//     const {id} = req.params;
 
-       const { title, description, difficulty, tags, visibleTestCases, hiddenTestCases, 
-        startCode, referenceSolution
-    } = req.body;
+//        const { title, description, difficulty, tags, visibleTestCases, hiddenTestCases, 
+//         startCode, referenceSolution
+//     } = req.body;
 
-    try{
+//     try{
 
-        if(!id){
-            return res.status(400).send("Missing ID Field");
-        }
+//         if(!id){
+//             return res.status(400).send("Missing ID Field");
+//         }
 
-        const DsaProblem = await Problem.findById(id);
+//         const DsaProblem = await Problem.findById(id);
 
-        if(!DsaProblem) {
-            return res.status(404).send("ID is not present in server");
-        }
+//         if(!DsaProblem) {
+//             return res.status(404).send("ID is not present in server");
+//         }
 
-         // Iterate through each reference solution
-        for (const { language, completeCode } of referenceSolution) {
-            // Get language ID for Judge0
-            const languageId = getLanguageById(language);
+//         //Validate solutions against visible testcases
+//          // Iterate through each reference solution
+//         for (const { language, completeCode } of referenceSolution) {
+//             // Get language ID for Judge0
+//             const languageId = getLanguageById(language);
 
-            if (!languageId) {
-                return res.status(400).send(`Unsupported language: ${language}`);
-            }
+//             if (!languageId) {
+//                 return res.status(400).send(`Unsupported language: ${language}`);
+//             }
 
           
-            // Create batch submission with all visible test cases
-            const submissions = visibleTestCases.map((testcase) => ({
-                source_code: completeCode,
-             
-                language_id: languageId,
-                stdin: testcase.input,
-                expected_output: testcase.output  
-            }));
+//             // Create batch submission with all visible test cases
+//            const actualCode = completeCode.replace(/\\n/g, '\n');
 
-            // Submit batch to Judge0
-            const submitResult = await submitBatch(submissions);
+//             // ✅Encode everything in base64 (Judge0 requirement)
+//             const submissions = visibleTestCases.map(tc => ({
+//                 source_code: Buffer.from(actualCode).toString("base64"),
+//                 language_id: languageId,
+//                 stdin: Buffer.from(tc.input).toString("base64"),
+//                 expected_output: Buffer.from(tc.output).toString("base64")
+//             }));
 
-            if (!submitResult) {
-                return res.status(400).send("Failed to submit batch");
+//             // Submit batch to Judge0
+//             const submitResult = await submitBatch(submissions);
+
+//             if (!submitResult) {
+//                 return res.status(400).send("Failed to submit batch");
+//             }
+
+//             // console.log(submitResult);
+//             // Extract tokens from submission results
+//             const resultToken = submitResult.map((value) => value.token);
+
+//             // Wait for results and get test output
+//             const testResult = await submitToken(resultToken);
+
+//             // console.log(testResult);
+//             // Verify all tests passed (status_id 3 = accepted)
+//             for (const test of testResult) {
+//                 if (test.status_id !== 3) {
+//                     return res.status(400).send(`Test failed for language ${language}. Status: ${test.status_id}`);
+//                 }
+//             }
+//         }
+
+
+//         // now we update this in out data
+//        const newUpdatedProblem = await Problem.findByIdAndUpdate(id, {...req.body}, {runValidators: true, new:true});
+//        res.status(200).send(newUpdatedProblem);
+
+
+//     }catch(err){
+//         res.status(400).send("Error from userProblem file and updateProblem function : " + err);
+
+//     }
+
+// }
+
+const updateProblem = async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        if (!id) return res.status(400).send("Missing ID Field");
+
+        const existing = await Problem.findById(id);
+        if (!existing) return res.status(404).send("Problem not found");
+
+        const updates = req.body;
+
+        //  Only validate reference solution if it exists
+        if (updates.referenceSolution) {
+
+            if (!updates.visibleTestCases) {
+                return res.status(400).send("Visible test cases required to validate reference solutions");
             }
 
-            // console.log(submitResult);
-            // Extract tokens from submission results
-            const resultToken = submitResult.map((value) => value.token);
+            for (const { language, completeCode } of updates.referenceSolution) {
 
-            // Wait for results and get test output
-            const testResult = await submitToken(resultToken);
+                const languageId = getLanguageById(language);
+                if (!languageId) return res.status(400).send(`Unsupported language: ${language}`);
 
-            // console.log(testResult);
-            // Verify all tests passed (status_id 3 = accepted)
-            for (const test of testResult) {
-                if (test.status_id !== 3) {
-                    return res.status(400).send(`Test failed for language ${language}. Status: ${test.status_id}`);
+                const actualCode = completeCode.replace(/\\n/g, "\n");
+
+                const submissions = updates.visibleTestCases.map(tc => ({
+                    source_code: Buffer.from(actualCode).toString("base64"),
+                    language_id: languageId,
+                    stdin: Buffer.from(tc.input).toString("base64"),
+                    expected_output: Buffer.from(tc.output).toString("base64")
+                }));
+
+                const submitResult = await submitBatch(submissions);
+                const resultToken = submitResult.map(r => r.token);
+                const testResult = await submitToken(resultToken);
+
+                for (const t of testResult) {
+                    if (t.status_id !== 3) {
+                        return res.status(400).send(`Test failed for ${language}`);
+                    }
                 }
             }
         }
 
+        //  Partial update: only update provided fields
+        const updated = await Problem.findByIdAndUpdate(
+            id,
+            updates,
+            { new: true, runValidators: false }
+        );
 
-        // now we update this in out data
-       const newUpdatedProblem = await Problem.findByIdAndUpdate(id, {...req.body}, {runValidators: true, new:true});
-       res.status(200).send(newUpdatedProblem);
+        res.status(200).json(updated);
 
-
-    }catch(err){
-        res.status(400).send("Error from userProblem file and updateProblem function : " + err);
-
+    } catch (err) {
+        res.status(400).send("Error updating problem: " + err.message);
     }
+};
 
-}
 
 //for delete dsa problem using id by admin
 
