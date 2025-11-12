@@ -1,44 +1,80 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { NavLink } from 'react-router'; 
 import { useDispatch, useSelector } from 'react-redux';
 import axiosClient from '../utils/axiosClient';
 import { logoutUser } from '../authSlice';
 import { LogOut, Menu, X, Code2, CheckCircle } from 'lucide-react';
+import toast, { Toaster } from 'react-hot-toast';
 
 function Homepage() {
+  const toastShown = useRef(false);
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [problems, setProblems] = useState([]);
   const [solvedProblems, setSolvedProblems] = useState([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     difficulty: 'all',
     tag: 'all',
     status: 'all' 
   });
 
-  useEffect(() => {
-    const fetchProblems = async () => {
-      try {
-        const { data } = await axiosClient.get('/problem/getAllProblem');
-        setProblems(data);
-      } catch (error) {
-        console.error('Error fetching problems:', error);
-      }
-    };
+ useEffect(() => {
+  const fetchProblems = async () => {
+    try {
+      setLoading(true);
+      const { data } = await axiosClient.get('/problem/getAllProblem');
+      setProblems(data);
+    } catch (error) {
+      console.error('Error fetching problems:', error);
+      toast.error('Failed to load problems');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
 
     const fetchSolvedProblems = async () => {
-      try {
-        const { data } = await axiosClient.get('/problem/problemSolvedByUser');
-        setSolvedProblems(data);
-      } catch (error) {
-        console.error('Error fetching solved problems:', error);
-      }
-    };
+    try {
+      const { data } = await axiosClient.get('/problem/problemSolvedByUser');
+      setSolvedProblems(data);
+    } catch (error) {
+      console.error('Error fetching solved problems:', error);
+    }
+  };
 
     fetchProblems();
-    if (user) fetchSolvedProblems();
-  }, [user]);
+  if (user) {
+    fetchSolvedProblems();
+  }
+}, [user]);
+
+
+    
+useEffect(() => {
+  if (user && !toastShown.current) {
+    toast.success(`Welcome back, ${user.firstName}! 🎉`, {
+      duration: 3000,
+      position: 'top-center',
+      style: {
+        background: '#0f172a',
+        color: '#fff',
+        border: '1px solid #0ea5e9',
+        padding: '16px 24px',        
+        fontSize: '18px',            
+        fontWeight: '600',            
+        minWidth: '350px', 
+      },
+      iconTheme: {
+        primary: '#0ea5e9',
+        secondary: '#fff',
+      },
+    });
+    toastShown.current = true;
+  }
+}, [user]);
 
   const handleLogout = () => {
     dispatch(logoutUser());
@@ -66,6 +102,7 @@ function Homepage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
+          <Toaster /> 
       {/* Navigation Bar */}
       <nav className="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 shadow-lg">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
@@ -182,9 +219,28 @@ function Homepage() {
           </div>
         </div>
 
-        {/* Problems List */}
+       {/* Problems List */}
         <div className="space-y-4">
-          {filteredProblems.length > 0 ? (
+          {loading ? (
+            // Loading Skeleton
+            [...Array(5)].map((_, idx) => (
+              <div
+                key={idx}
+                className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm animate-pulse"
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div className="flex-1">
+                    <div className="h-6 bg-slate-800 rounded w-3/4 mb-2"></div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <div className="h-8 bg-slate-800 rounded w-20"></div>
+                  <div className="h-8 bg-slate-800 rounded w-24"></div>
+                </div>
+              </div>
+            ))
+          ) : filteredProblems.length > 0 ? (
             filteredProblems.map((problem, idx) => (
               <NavLink
                 key={problem._id}
@@ -192,6 +248,7 @@ function Homepage() {
                 className="block group animate-fade-in"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
+                {/* Keep all your existing problem card code here - DON'T CHANGE ANYTHING BELOW */}
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 backdrop-blur-sm hover:border-sky-500/50 hover:bg-slate-900/80 transition-all duration-300 transform hover:scale-102 hover:shadow-lg hover:shadow-sky-500/10 cursor-pointer">
                   <div className="flex items-center justify-between gap-4 mb-4">
                     <div className="flex-1">
