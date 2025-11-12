@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import axiosClient from './utils/axiosClient'
+import toast from 'react-hot-toast';
 
 export const registerUser = createAsyncThunk(
   'auth/register',
@@ -56,8 +57,37 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       await axiosClient.post('/user/logout');
+
+     sessionStorage.removeItem('loginToastShown');
+      sessionStorage.removeItem('signupToastShown');
+
+       toast.success('Logged out successfully! ', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#0f172a',
+          color: '#fff',
+          border: '1px solid #0ea5e9',
+          padding: '16px 24px',
+          fontSize: '16px',
+          fontWeight: '600',
+        },
+      });
       return null;
     } catch (error) {
+         toast.error('Logout failed. Please try again.', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#0f172a',
+          color: '#fff',
+          border: '1px solid #ef4444',
+          padding: '16px 24px',
+          fontSize: '16px',
+          fontWeight: '600',
+        },
+      });
+
       return rejectWithValue(error);
     }
   }

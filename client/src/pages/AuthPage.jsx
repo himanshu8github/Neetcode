@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router';
 import { loginUser, registerUser } from '../authSlice';
 import { Mail, Lock, User, Eye, EyeOff, Code2, Zap } from 'lucide-react';
 import SocialFooter from '../components/Social'
+import toast, { Toaster } from 'react-hot-toast';
 
 // Validation Schemas (unchanged)
 const loginSchema = z.object({
@@ -26,6 +27,8 @@ function AuthPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
+  const toastShownLogin = useRef(false);
+const toastShownSignup = useRef(false);
 
   // Login Form (unchanged)
   const {
@@ -48,19 +51,176 @@ function AuthPage() {
   }, [isAuthenticated, navigate]);
 
   // Handlers (unchanged)
-  const onLoginSubmit = (data) => dispatch(loginUser(data));
-  const onSignupSubmit = (data) => dispatch(registerUser(data));
+  // const onLoginSubmit = (data) => dispatch(loginUser(data));
+  // const onSignupSubmit = (data) => dispatch(registerUser(data));
+
+//   const onLoginSubmit = async (data) => {
+//   try {
+//     await dispatch(loginUser(data)).unwrap();
+//     if (!toastShownLogin.current) {
+//       toast.success('Signed in successfully! 🎉', {
+//         duration: 3000,
+//         position: 'top-center',
+//         style: {
+//           background: '#0f172a',
+//           color: '#fff',
+//           border: '1px solid #0ea5e9',
+//           padding: '16px 24px',
+//           fontSize: '16px',
+//           fontWeight: '600',
+//         },
+//       });
+//       toastShownLogin.current = true;
+//     }
+//   } catch (error) {
+//     toast.error(error.message || 'Login failed. Please try again.', {
+//       duration: 3000,
+//       position: 'top-center',
+//       style: {
+//         background: '#0f172a',
+//         color: '#fff',
+//         border: '1px solid #ef4444',
+//         padding: '16px 24px',
+//         fontSize: '16px',
+//         fontWeight: '600',
+//       },
+//     });
+//   }
+// };
+
+const onLoginSubmit = async (data) => {
+  try {
+    await dispatch(loginUser(data)).unwrap();
+
+    //  Show toast only once per session (even after refresh)
+    if (!toastShownLogin.current && !sessionStorage.getItem('loginToastShown')) {
+      toast.success('Signed in successfully! 🎉', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#0f172a',
+          color: '#fff',
+          border: '1px solid #0ea5e9',
+          padding: '16px 24px',
+          fontSize: '16px',
+          fontWeight: '600',
+        },
+      });
+      toastShownLogin.current = true;
+      sessionStorage.setItem('loginToastShown', 'true'); // store flag till tab closes
+    }
+
+    sessionStorage.setItem('justLoggedIn', 'true');
+  } catch (error) {
+    toast.error(error.message || 'Login failed. Please try again.', {
+      duration: 3000,
+      position: 'top-center',
+      style: {
+        background: '#0f172a',
+        color: '#fff',
+        border: '1px solid #ef4444',
+        padding: '16px 24px',
+        fontSize: '16px',
+        fontWeight: '600',
+      },
+    });
+  }
+};
+
+
+const onSignupSubmit = async (data) => {
+  try {
+    await dispatch(registerUser(data)).unwrap();
+
+    //  Show toast only once per session (even after refresh)
+    if (!toastShownSignup.current && !sessionStorage.getItem('signupToastShown')) {
+      toast.success('Account created successfully! 🎉', {
+        duration: 3000,
+        position: 'top-center',
+        style: {
+          background: '#0f172a',
+          color: '#fff',
+          border: '1px solid #0ea5e9',
+          padding: '16px 24px',
+          fontSize: '16px',
+          fontWeight: '600',
+        },
+      });
+      toastShownSignup.current = true;
+      sessionStorage.setItem('signupToastShown', 'true'); // store flag till tab closes
+    }
+
+  } catch (error) {
+    toast.error(error.message || 'Signup failed. Please try again.', {
+      duration: 3000,
+      position: 'top-center',
+      style: {
+        background: '#0f172a',
+        color: '#fff',
+        border: '1px solid #ef4444',
+        padding: '16px 24px',
+        fontSize: '16px',
+        fontWeight: '600',
+      },
+    });
+  }
+};
+
+
+// const onSignupSubmit = async (data) => {
+//   try {
+//     await dispatch(registerUser(data)).unwrap();
+//     if (!toastShownSignup.current) {
+//       toast.success('Account created successfully! 🎉', {
+//         duration: 3000,
+//         position: 'top-center',
+//         style: {
+//           background: '#0f172a',
+//           color: '#fff',
+//           border: '1px solid #0ea5e9',
+//           padding: '16px 24px',
+//           fontSize: '16px',
+//           fontWeight: '600',
+//         },
+//       });
+//       toastShownSignup.current = true;
+//     }
+//   } catch (error) {
+//     toast.error(error.message || 'Signup failed. Please try again.', {
+//       duration: 3000,
+//       position: 'top-center',
+//       style: {
+//         background: '#0f172a',
+//         color: '#fff',
+//         border: '1px solid #ef4444',
+//         padding: '16px 24px',
+//         fontSize: '16px',
+//         fontWeight: '600',
+//       },
+//     });
+//   }
+// };
+
+  // const toggleForm = () => {
+  //   setIsSignUp(!isSignUp);
+  //   setShowPassword(false);
+  //   if (isSignUp) resetLogin();
+  //   else resetSignup();
+  // };
 
   const toggleForm = () => {
-    setIsSignUp(!isSignUp);
-    setShowPassword(false);
-    if (isSignUp) resetLogin();
-    else resetSignup();
-  };
+  setIsSignUp(!isSignUp);
+  setShowPassword(false);
+  toastShownLogin.current = false;
+  toastShownSignup.current = false;
+  if (isSignUp) resetLogin();
+  else resetSignup();
+};
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
       {/* Background Gradient Blobs */}
+          <Toaster />
       <div className="absolute top-[-20%] left-[-10%] w-[40rem] h-[40rem] bg-sky-500/10 rounded-full blur-3xl animate-pulse" />
       <div className="absolute bottom-[-25%] right-[-10%] w-[42rem] h-[42rem] bg-violet-500/10 rounded-full blur-3xl animate-pulse" />
 
@@ -90,16 +250,16 @@ function AuthPage() {
             <div className="relative">
               <div className="absolute inset-0 bg-sky-500/30 rounded-full blur-2xl animate-pulse" />
               <div className="relative bg-gradient-to-br from-sky-500 to-sky-600 p-8 rounded-3xl shadow-[0_0_40px_rgba(14,165,233,0.35)] animate-bounce-slow">
-                <Zap className="w-16 h-16 text-white" />
+                <Zap className="w-16 h-13 text-white" />
               </div>
             </div>
 
             {/* Text */}
             <div className="text-center space-y-6 animate-fade-in-up">
-              <p className="text-slate-400 text-xl font-bold tracking-widest uppercase animate-pulse">
+              <p className="text-slate-400 text-2xl font-bold tracking-widest uppercase animate-pulse">
                 Welcome back
               </p>
-              <h2 className="text-5xl font-extrabold text-white leading-tight">to</h2>
+              <h2 className="text-3xl font-extrabold text-white leading-tight">to</h2>
               <h2 className="text-5xl font-extrabold bg-gradient-to-r from-sky-400 via-sky-500 to-sky-600 bg-clip-text text-transparent animate-shimmer bg-[length:200%_auto]">
                 CodeMatrix
               </h2>
@@ -108,23 +268,17 @@ function AuthPage() {
               </p>
             </div>
 
-            {/* Subtle Features Row */}
-            <div className="flex gap-3">
-              {['Secure', 'Fast', 'AI-Assisted'].map((t, idx) => (
-                <span
-                  key={idx}
-                  className="px-3 py-1 text-xs rounded-full border border-slate-800 bg-slate-900/40 text-slate-300"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
+          {/* Social Footer inside Welcome Card */}
+<div className="mt-1 w-full max-w-xs">
+  <SocialFooter />
+</div>
+
           </div>
 
           {/* Right Side — Auth Card with Gradient Border + Glass */}
           <div className="w-full max-w-md mx-auto">
             <div className="relative rounded-3xl p-[2px] bg-gradient-to-r from-sky-500 via-blue-600 to-purple-600 animate-gradient shadow-[0_10px_60px_rgba(59,130,246,0.25)]">
-              <div className="rounded-3xl bg-white/5 backdrop-blur-2xl border border-white/10 p-8">
+             <div className="rounded-3xl bg-slate-900/90 backdrop-blur-2xl border border-white/10 p-8">
                 {/* Header */}
                 {/* Header */}
 <div className="text-center mb-8">
@@ -151,7 +305,32 @@ function AuthPage() {
                
 
                 {/* Toggle Slider */}
-                <div className="flex gap-1 bg-slate-900/70 p-1 rounded-xl mb-6 border border-slate-800 backdrop-blur-sm shadow-inner">
+            
+<div className="flex gap-1 bg-slate-950/70 p-1 rounded-xl mb-6 border border-slate-800 backdrop-blur-sm shadow-inner">
+  <button
+    type="button"
+    onClick={() => { if (isSignUp) toggleForm(); }}
+    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
+      !isSignUp
+        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
+        : 'text-slate-400 hover:text-slate-200 scale-95'
+    }`}
+  >
+    Sign In
+  </button>
+  <button
+    type="button"
+    onClick={() => { if (!isSignUp) toggleForm(); }}
+    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
+      isSignUp
+        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
+        : 'text-slate-400 hover:text-slate-200 scale-95'
+    }`}
+  >
+    Sign Up
+  </button>
+</div>
+                {/* <div className="flex gap-1 bg-slate-900/70 p-1 rounded-xl mb-6 border border-slate-800 backdrop-blur-sm shadow-inner">
                   <button
                     onClick={() => !isSignUp && toggleForm()}
                     className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
@@ -172,10 +351,11 @@ function AuthPage() {
                   >
                     Sign Up
                   </button>
-                </div>
+                </div> */}
 
                 {/* Forms Container (same height, animated swap) */}
-                <div className="relative h-96 sm:h-[315px]">
+                {/* <div className="relative h-96 sm:h-[315px]"> */}
+                <div className="relative h-96 sm:h-[320px]">
                   {/* Sign In Form */}
                   <div
                     className={`absolute inset-0 transition-all duration-700 ease-out ${
@@ -258,7 +438,7 @@ function AuthPage() {
                     <form onSubmit={handleSignupSubmit(onSignupSubmit)} className="space-y-4">
                       {/* First Name */}
                       <div className="animate-fade-in" style={{ animationDelay: '0ms' }}>
-                        <label className="block text-sm font-medium text-white mb-2">First Name</label>
+                        <label className="block text-sm font-medium text-slate-200 mb-2">First Name</label>
                         <div className="relative group">
                           <User className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
                           <input
@@ -278,7 +458,7 @@ function AuthPage() {
 
                       {/* Email */}
                       <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-                        <label className="block text-sm font-medium text-white mb-2">Email</label>
+                        <label className="block text-sm font-medium text-slate-200 mb-2">Email</label>
                         <div className="relative group">
                           <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
                           <input
@@ -298,7 +478,7 @@ function AuthPage() {
 
                       {/* Password */}
                       <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-                        <label className="block text-sm font-medium text-white mb-2">Password</label>
+                        <label className="block text-sm font-medium text-slate-200 mb-2">Password</label>
                         <div className="relative group">
                           <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
                           <input
@@ -343,6 +523,7 @@ function AuthPage() {
                   </div>
                 </div>
 
+    
                 {/* Small Tagline
                 <p className="text-center text-slate-500 text-xs mt-6">
                   Superfast • Secure • AI-Assisted Learning
@@ -352,6 +533,13 @@ function AuthPage() {
           </div>
         </div>
       </div>
+
+      {/* <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+  <div className="w-[90%] sm:w-auto">
+    <SocialFooter />
+  </div>
+</div> */}
+
 
       {/* Custom Animations */}
       <style>{`
