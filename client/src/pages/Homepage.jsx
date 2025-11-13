@@ -21,9 +21,10 @@ function Homepage() {
   });
 
  useEffect(() => {
+   setLoading(true);
   const fetchProblems = async () => {
     try {
-      setLoading(true);
+     
       const { data } = await axiosClient.get('/problem/getAllProblem');
       setProblems(data);
     } catch (error) {
