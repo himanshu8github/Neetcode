@@ -325,6 +325,24 @@ useEffect(() => {
         </div>
       </div>
 
+      {/* Full Screen Loader */}
+{isRedirecting && (
+  <div className="fixed inset-0 bg-black/95 backdrop-blur-sm z-50 flex flex-col items-center justify-center">
+    <div className="relative">
+      <div className="w-16 h-16 border-4 border-sky-500/30 border-t-sky-500 rounded-full animate-spin"></div>
+      <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-cyan-400 rounded-full animate-spin" style={{ animationDuration: '0.8s' }}></div>
+    </div>
+    <p className="mt-6 text-white text-lg font-semibold animate-pulse">
+      Please wait while we fetch problems...
+    </p>
+    <div className="mt-2 flex gap-1">
+      <span className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+      <span className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+      <span className="w-2 h-2 bg-sky-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+    </div>
+  </div>
+)}
+
       {/* Custom Animations */}
       <style>{`
         @keyframes fade-in {
