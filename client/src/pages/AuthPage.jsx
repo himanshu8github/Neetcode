@@ -29,7 +29,7 @@ function AuthPage() {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
   const toastShownLogin = useRef(false);
 const toastShownSignup = useRef(false);
-const [isRedirecting, setIsRedirecting] = useState(false);
+// const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Login Form (unchanged)
   const {
