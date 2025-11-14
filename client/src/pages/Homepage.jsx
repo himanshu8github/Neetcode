@@ -79,32 +79,32 @@ function Homepage() {
 // }, [user]);
 
 
-useEffect(() => {
-  const justLoggedIn = sessionStorage.getItem('justLoggedIn'); //  from AuthPage
-  if (user && justLoggedIn && !toastShown.current) {
-    toast.success(`Welcome back, ${user.firstName}! 🎉`, {
-      duration: 3000,
-      position: 'top-center',
-      style: {
-        background: '#0f172a',
-        color: '#fff',
-        border: '1px solid #0ea5e9',
-        padding: '16px 24px',
-        fontSize: '18px',
-        fontWeight: '600',
-        minWidth: '350px',
-      },
-      iconTheme: {
-        primary: '#0ea5e9',
-        secondary: '#fff',
-      },
-    });
-    toastShown.current = true;
+// useEffect(() => {
+//   const justLoggedIn = sessionStorage.getItem('justLoggedIn'); //  from AuthPage
+//   if (user && justLoggedIn && !toastShown.current) {
+//     toast.success(`Welcome back, ${user.firstName}! 🎉`, {
+//       duration: 3000,
+//       position: 'top-center',
+//       style: {
+//         background: '#0f172a',
+//         color: '#fff',
+//         border: '1px solid #0ea5e9',
+//         padding: '16px 24px',
+//         fontSize: '18px',
+//         fontWeight: '600',
+//         minWidth: '350px',
+//       },
+//       iconTheme: {
+//         primary: '#0ea5e9',
+//         secondary: '#fff',
+//       },
+//     });
+//     toastShown.current = true;
 
-    //  Remove flag so it won't trigger again on refresh
-    sessionStorage.removeItem('justLoggedIn');
-  }
-}, [user]);
+//     //  Remove flag so it won't trigger again on refresh
+//     sessionStorage.removeItem('justLoggedIn');
+//   }
+// }, [user]);
 
 
   const handleLogout = () => {
