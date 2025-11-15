@@ -5,7 +5,7 @@ const adminMiddleware = require("../middleware/adminMiddleware");
 const authRouter = express.Router();
 const { register, login, logout, adminRegister, 
     firstAdminRegister, deleteUser 
-    ,getAllUsers, deleteUserProfile} = require('../controllers/userAuth')
+    ,getAllUsers, deleteUserProfile, firebaseRegister} = require('../controllers/userAuth')
 
 
 authRouter.get('/all',  getAllUsers);
@@ -28,6 +28,8 @@ authRouter.post('/admin/register/first', firstAdminRegister);
 
 // Register new admins (only existing admins can do this - requires admin middleware)
 authRouter.post('/admin/register', adminMiddleware, adminRegister);
+
+authRouter.post('/firebase-register', firebaseRegister);
 
 authRouter.get('/check',userMiddleware,(req,res)=>{
 

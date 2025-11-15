@@ -5,16 +5,23 @@ import { z } from 'zod';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
 import { loginUser, registerUser } from '../authSlice';
-import { Mail, Lock, User, Eye, EyeOff, Code2, Zap } from 'lucide-react';
-import SocialFooter from '../components/Social'
+import { Mail, Lock, User, Eye, EyeOff, Code2, ArrowRight } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
+import {
+  signInWithPopup,
+  getRedirectResult,
+  GoogleAuthProvider,
+    signInWithRedirect
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
+import axiosClient from '../utils/axiosClient';
+import LeftHero from '../components/LeftHero';
 
-// Validation Schemas (unchanged)
+// Validation Schemas
 const loginSchema = z.object({
   emailId: z.string().email('Invalid Email'),
   password: z.string().min(8, 'Password is too weak'),
 });
-
 const signupSchema = z.object({
   firstName: z.string().min(3, 'Minimum 3 characters'),
   emailId: z.string().email('Invalid Email'),
@@ -28,18 +35,16 @@ function AuthPage() {
   const navigate = useNavigate();
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
   const toastShownLogin = useRef(false);
-const toastShownSignup = useRef(false);
-// const [isRedirecting, setIsRedirecting] = useState(false);
+  const toastShownSignup = useRef(false);
+  const [firebaseLoading, setFirebaseLoading] = useState(false);
 
-  // Login Form (unchanged)
+  // Forms
   const {
     register: registerLogin,
     handleSubmit: handleLoginSubmit,
     formState: { errors: loginErrors },
     reset: resetLogin,
   } = useForm({ resolver: zodResolver(loginSchema) });
-
-  // Signup Form (unchanged)
   const {
     register: registerSignup,
     handleSubmit: handleSignupSubmit,
@@ -47,550 +52,424 @@ const toastShownSignup = useRef(false);
     reset: resetSignup,
   } = useForm({ resolver: zodResolver(signupSchema) });
 
-  // useEffect(() => {
-  //   if (isAuthenticated) navigate('/');
-  // }, [isAuthenticated, navigate]);
-  
+  // Manual auth redirect
   useEffect(() => {
-  if (isAuthenticated) {
-    setIsRedirecting(true);
-    // Small delay to show loading screen
-    setTimeout(() => {
-      navigate('/');
-    }, 500);
-  }
-}, [isAuthenticated, navigate]);
+    if (isAuthenticated) {
+      setTimeout(() => navigate('/'), 500);
+    }
+  }, [isAuthenticated, navigate]);
 
-  // Handlers (unchanged)
-  // const onLoginSubmit = (data) => dispatch(loginUser(data));
-  // const onSignupSubmit = (data) => dispatch(registerUser(data));
+  // Firebase redirect
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          const intendedMode = sessionStorage.getItem('googleIntendedMode'); // added
+          const wasSignup = intendedMode === 'signup';                       // added
+          await handleFirebaseUser(result.user, wasSignup);                  // changed
+          sessionStorage.removeItem('googleIntendedMode');                   // added
+        }
+      } catch (error) {
+        console.error('Firebase redirect error:', error);
+        toast.error('Authentication failed');
+      }
+    };
+    checkRedirectResult();
+  }, []);
 
-//   const onLoginSubmit = async (data) => {
-//   try {
-//     await dispatch(loginUser(data)).unwrap();
-//     if (!toastShownLogin.current) {
-//       toast.success('Signed in successfully! 🎉', {
-//         duration: 3000,
-//         position: 'top-center',
-//         style: {
-//           background: '#0f172a',
-//           color: '#fff',
-//           border: '1px solid #0ea5e9',
-//           padding: '16px 24px',
-//           fontSize: '16px',
-//           fontWeight: '600',
-//         },
-//       });
-//       toastShownLogin.current = true;
-//     }
-//   } catch (error) {
-//     toast.error(error.message || 'Login failed. Please try again.', {
-//       duration: 3000,
-//       position: 'top-center',
-//       style: {
-//         background: '#0f172a',
-//         color: '#fff',
-//         border: '1px solid #ef4444',
-//         padding: '16px 24px',
-//         fontSize: '16px',
-//         fontWeight: '600',
-//       },
-//     });
-//   }
-// };
 
-const onLoginSubmit = async (data) => {
-  try {
-    await dispatch(loginUser(data)).unwrap();
+  const handleFirebaseUser = async (user, isNewSignup) => {
+    try {
+      await user.reload();
+      const email =
+        user.email ||
+        user.providerData?.find(p => p.providerId === 'google.com')?.email ||
+        null;
 
-    //  Show toast only once per session (even after refresh)
-    if (!toastShownLogin.current && !sessionStorage.getItem('loginToastShown')) {
-      toast.success('Signed in successfully! 🎉', {
+      if (!email) {
+        toast.error('Email not available from Google. Please try again.');
+         setFirebaseLoading(false);
+        return;
+      }
+         const idToken = await user.getIdToken();
+      const response = await axiosClient.post('/user/firebase-register', {
+        uid: user.uid,
+        firstName: user.displayName?.split(' ')[0] || 'User',
+      emailId: email,          
+        photoURL: user.photoURL || null,
+        idToken,
+      });
+
+      if (response.status === 200 || response.status === 201) {
+        dispatch({
+  type: "auth/loginSuccess",
+  payload: response.data.user
+});
+
+
+  
+        toast.success(isNewSignup ? 
+          'Account created successfully! 🎉' 
+          : 'Logged in successfully! 🎉', {
+          duration: 3000,
+          position: 'top-center',
+          style: {
+            background: '#0f172a',
+            color: '#fff',
+            border: '1px solid #0ea5e9',
+            padding: '16px 24px',
+            fontSize: '16px',
+            fontWeight: '600',
+          },
+        });
+        sessionStorage.setItem('justLoggedIn', 'true');
+      setTimeout(() => navigate('/'), 500);
+      
+      }
+    } catch (error) {
+      console.error('Firebase user registration error:', error);
+      toast.error(error.response?.data?.message || 'Registration failed');
+    } finally {
+      setFirebaseLoading(false);
+    }
+  };
+
+  // Google OAuth only
+  const handleGoogleAuth = async () => {
+   if (firebaseLoading) return;
+    setFirebaseLoading(true);
+    const provider = new GoogleAuthProvider();
+    provider.addScope('email');
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+       const result = await signInWithPopup(auth, provider);
+      await handleFirebaseUser(result.user, isSignUp);
+    } catch (e) {
+      console.warn('Popup failed, falling back to redirect:', e?.message || e);
+      await signInWithRedirect(auth, provider);
+     } finally {
+
+    if (!sessionStorage.getItem('googleIntendedMode')) {
+        setFirebaseLoading(false);
+      }
+    }
+  };
+
+  // Manual login
+  const onLoginSubmit = async (data) => {
+    try {
+      await dispatch(loginUser(data)).unwrap();
+      if (!toastShownLogin.current && !sessionStorage.getItem('loginToastShown')) {
+        toast.success('Signed in successfully! 🎉', {
+          duration: 3000,
+          position: 'top-center',
+          style: {
+            background: '#0f172a',
+            color: '#fff',
+            border: '1px solid #0ea5e9',
+            padding: '16px 24px',
+            fontSize: '16px',
+            fontWeight: '600',
+          },
+        });
+        toastShownLogin.current = true;
+        sessionStorage.setItem('loginToastShown', 'true');
+      }
+      sessionStorage.setItem('justLoggedIn', 'true');
+    } catch (error) {
+      toast.error(error.message || 'Login failed. Please try again.', {
         duration: 3000,
         position: 'top-center',
         style: {
           background: '#0f172a',
           color: '#fff',
-          border: '1px solid #0ea5e9',
+          border: '1px solid #ef4444',
           padding: '16px 24px',
           fontSize: '16px',
           fontWeight: '600',
         },
       });
-      toastShownLogin.current = true;
-      sessionStorage.setItem('loginToastShown', 'true'); // store flag till tab closes
     }
+  };
 
-    sessionStorage.setItem('justLoggedIn', 'true');
-  } catch (error) {
-    toast.error(error.message || 'Login failed. Please try again.', {
-      duration: 3000,
-      position: 'top-center',
-      style: {
-        background: '#0f172a',
-        color: '#fff',
-        border: '1px solid #ef4444',
-        padding: '16px 24px',
-        fontSize: '16px',
-        fontWeight: '600',
-      },
-    });
-  }
-};
-
-
-const onSignupSubmit = async (data) => {
-  try {
-    await dispatch(registerUser(data)).unwrap();
-
-    //  Show toast only once per session (even after refresh)
-    if (!toastShownSignup.current && !sessionStorage.getItem('signupToastShown')) {
-      toast.success('Account created successfully! 🎉', {
+  // Manual signup
+  const onSignupSubmit = async (data) => {
+    try {
+      await dispatch(registerUser(data)).unwrap();
+      if (!toastShownSignup.current && !sessionStorage.getItem('signupToastShown')) {
+        toast.success('Account created successfully! 🎉', {
+          duration: 3000,
+          position: 'top-center',
+          style: {
+            background: '#0f172a',
+            color: '#fff',
+            border: '1px solid #0ea5e9',
+            padding: '16px 24px',
+            fontSize: '16px',
+            fontWeight: '600',
+          },
+        });
+        toastShownSignup.current = true;
+        sessionStorage.setItem('signupToastShown', 'true');
+      }
+    } catch (error) {
+      toast.error(error.message || 'Signup failed. Please try again.', {
         duration: 3000,
         position: 'top-center',
         style: {
           background: '#0f172a',
           color: '#fff',
-          border: '1px solid #0ea5e9',
+          border: '1px solid #ef4444',
           padding: '16px 24px',
           fontSize: '16px',
           fontWeight: '600',
         },
       });
-      toastShownSignup.current = true;
-      sessionStorage.setItem('signupToastShown', 'true'); // store flag till tab closes
     }
-
-  } catch (error) {
-    toast.error(error.message || 'Signup failed. Please try again.', {
-      duration: 3000,
-      position: 'top-center',
-      style: {
-        background: '#0f172a',
-        color: '#fff',
-        border: '1px solid #ef4444',
-        padding: '16px 24px',
-        fontSize: '16px',
-        fontWeight: '600',
-      },
-    });
-  }
-};
-
-
-// const onSignupSubmit = async (data) => {
-//   try {
-//     await dispatch(registerUser(data)).unwrap();
-//     if (!toastShownSignup.current) {
-//       toast.success('Account created successfully! 🎉', {
-//         duration: 3000,
-//         position: 'top-center',
-//         style: {
-//           background: '#0f172a',
-//           color: '#fff',
-//           border: '1px solid #0ea5e9',
-//           padding: '16px 24px',
-//           fontSize: '16px',
-//           fontWeight: '600',
-//         },
-//       });
-//       toastShownSignup.current = true;
-//     }
-//   } catch (error) {
-//     toast.error(error.message || 'Signup failed. Please try again.', {
-//       duration: 3000,
-//       position: 'top-center',
-//       style: {
-//         background: '#0f172a',
-//         color: '#fff',
-//         border: '1px solid #ef4444',
-//         padding: '16px 24px',
-//         fontSize: '16px',
-//         fontWeight: '600',
-//       },
-//     });
-//   }
-// };
-
-  // const toggleForm = () => {
-  //   setIsSignUp(!isSignUp);
-  //   setShowPassword(false);
-  //   if (isSignUp) resetLogin();
-  //   else resetSignup();
-  // };
+  };
 
   const toggleForm = () => {
-  setIsSignUp(!isSignUp);
-  setShowPassword(false);
-  toastShownLogin.current = false;
-  toastShownSignup.current = false;
-  if (isSignUp) resetLogin();
-  else resetSignup();
-};
+    setIsSignUp(!isSignUp);
+    setShowPassword(false);
+    toastShownLogin.current = false;
+    toastShownSignup.current = false;
+    if (isSignUp) resetLogin();
+    else resetSignup();
+  };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Background Gradient Blobs */}
-          <Toaster />
-      <div className="absolute top-[-20%] left-[-10%] w-[40rem] h-[40rem] bg-sky-500/10 rounded-full blur-3xl animate-pulse" />
-      <div className="absolute bottom-[-25%] right-[-10%] w-[42rem] h-[42rem] bg-violet-500/10 rounded-full blur-3xl animate-pulse" />
-
-      {/* Floating Particles */}
-      <div className="absolute inset-0 -z-0 overflow-hidden pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute bg-sky-400/10 rounded-full animate-float"
-            style={{
-              width: `${Math.random() * 10 + 4}px`,
-              height: `${Math.random() * 10 + 4}px`,
-              top: `${Math.random() * 100}%`,
-              left: `${Math.random() * 100}%`,
-              animationDuration: `${Math.random() * 5 + 3}s`,
-              animationDelay: `${Math.random() * 2}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div className="w-full max-w-6xl relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          {/* Left Side — Hero / Branding */}
-          <div className="hidden lg:flex flex-col items-center justify-center space-y-12">
-            {/* Glowing Icon */}
-            <div className="relative">
-              <div className="absolute inset-0 bg-sky-500/30 rounded-full blur-2xl animate-pulse" />
-              <div className="relative bg-gradient-to-br from-sky-500 to-sky-600 p-8 rounded-3xl shadow-[0_0_40px_rgba(14,165,233,0.35)] animate-bounce-slow">
-                <Zap className="w-16 h-13 text-white" />
-              </div>
-            </div>
-
-            {/* Text */}
-            <div className="text-center space-y-6 animate-fade-in-up">
-              <p className="text-slate-400 text-2xl font-bold tracking-widest uppercase animate-pulse">
-                Welcome back
-              </p>
-              <h2 className="text-3xl font-extrabold text-white leading-tight">to</h2>
-              <h2 className="text-5xl font-extrabold bg-gradient-to-r from-sky-400 via-sky-500 to-sky-600 bg-clip-text text-transparent animate-shimmer bg-[length:200%_auto]">
-                CodeMatrix
-              </h2>
-              <p className="text-slate-400 text-lg max-w-sm mx-auto">
-                Master Data Structures &amp; Algorithms with AI-powered guidance
-              </p>
-            </div>
-
-          {/* Social Footer inside Welcome Card */}
-<div className="mt-1 w-full max-w-xs">
-  <SocialFooter />
-</div>
-
-          </div>
-
-          {/* Right Side — Auth Card with Gradient Border + Glass */}
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+      <Toaster />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+      <div className="absolute top-1/4 right-1/3 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="w-full max-w-5xl relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
+          <LeftHero />
           <div className="w-full max-w-md mx-auto">
-            <div className="relative rounded-3xl p-[2px] bg-gradient-to-r from-sky-500 via-blue-600 to-purple-600 animate-gradient shadow-[0_10px_60px_rgba(59,130,246,0.25)]">
-             <div className="rounded-3xl bg-slate-900/90 backdrop-blur-2xl border border-white/10 p-8">
-                {/* Header */}
-                {/* Header */}
-<div className="text-center mb-8">
-  <div className="flex items-center justify-center gap-2 mb-4 animate-fade-in">
-    <div className="relative">
-      <div className="absolute inset-0 bg-sky-500/30 blur-lg rounded-xl" />
-      <div className="relative bg-gradient-to-br from-sky-500 to-sky-600 p-2 rounded-xl shadow-lg">
-        <Code2 className="w-6 h-6 text-white" />
-      </div>
-    </div>
-    <h1 className="text-3xl font-bold text-white">
-      Code<span className="text-sky-500">Matrix</span>
-    </h1>
-  </div>
-  
-  {/* Larger animated welcome text */}
-  <p className="text-slate-300 text-lg font-semibold mb-3 animate-fade-in-up">
-    Welcome Back
-  </p>
-  
-  <p className="text-slate-400 text-sm">Master DSA with AI-powered guidance</p>
-
-</div>
-               
-
-                {/* Toggle Slider */}
-            
-<div className="flex gap-1 bg-slate-950/70 p-1 rounded-xl mb-6 border border-slate-800 backdrop-blur-sm shadow-inner">
-  <button
-    type="button"
-    onClick={() => { if (isSignUp) toggleForm(); }}
-    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
-      !isSignUp
-        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
-        : 'text-slate-400 hover:text-slate-200 scale-95'
-    }`}
-  >
-    Sign In
-  </button>
-  <button
-    type="button"
-    onClick={() => { if (!isSignUp) toggleForm(); }}
-    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
-      isSignUp
-        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
-        : 'text-slate-400 hover:text-slate-200 scale-95'
-    }`}
-  >
-    Sign Up
-  </button>
-</div>
-                {/* <div className="flex gap-1 bg-slate-900/70 p-1 rounded-xl mb-6 border border-slate-800 backdrop-blur-sm shadow-inner">
-                  <button
-                    onClick={() => !isSignUp && toggleForm()}
-                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
-                      !isSignUp
-                        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
-                        : 'text-slate-400 hover:text-slate-200 scale-95'
-                    }`}
-                  >
-                    Sign In
-                  </button>
-                  <button
-                    onClick={() => isSignUp && toggleForm()}
-                    className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-500 transform ${
-                      isSignUp
-                        ? 'bg-gradient-to-r from-cyan-500 to-cyan-600 text-white shadow-lg shadow-cyan-500/40 scale-100'
-                        : 'text-slate-400 hover:text-slate-200 scale-95'
-                    }`}
-                  >
-                    Sign Up
-                  </button>
-                </div> */}
-
-                {/* Forms Container (same height, animated swap) */}
-                {/* <div className="relative h-96 sm:h-[315px]"> */}
-                <div className="relative h-96 sm:h-[320px]">
-                  {/* Sign In Form */}
-                  <div
-                    className={`absolute inset-0 transition-all duration-700 ease-out ${
-                      isSignUp ? 'opacity-0 translate-x-12 pointer-events-none' : 'opacity-100 translate-x-0'
-                    }`}
-                  >
-                    <form onSubmit={handleLoginSubmit(onLoginSubmit)} className="space-y-4">
-                      {/* Email */}
-                      <div className="animate-fade-in" style={{ animationDelay: '0ms' }}>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                        <div className="relative group">
-                          <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
-                          <input
-                            type="email"
-                            placeholder="john@example.com"
-                            autoComplete="email"
-                            className={`w-full pl-10 pr-4 py-3 bg-slate-950/60 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition-all transform focus:scale-[1.015] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] ${
-                              loginErrors.emailId ? 'border-red-500' : 'border-slate-800'
-                            }`}
-                            {...registerLogin('emailId')}
-                          />
-                        </div>
-                        {loginErrors.emailId && (
-                          <p className="text-red-400 text-xs mt-1">{loginErrors.emailId.message}</p>
-                        )}
+            <div className="bg-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-8 shadow-2xl hover:border-slate-600/50 transition-colors duration-300">
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-10 h-10 bg-gradient-to-br from-cyan-500 to-cyan-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/30">
+                  <Code2 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-3xl font-bold text-white">CodeMatrix</h2>
+                  <p className="text-xl text-slate-400">Master DSA</p>
+                </div>
+              </div>
+              <div className="flex gap-2 bg-slate-800/30 p-1.5 rounded-lg mb-5 border border-slate-700/30">
+                <button
+                  type="button"
+                  onClick={() => { if (isSignUp) toggleForm(); }}
+                  className={`flex-1 py-2.5 px-3 rounded-md font-semibold text-sm transition-all duration-300 ${
+                    !isSignUp ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30' : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  Sign In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { if (!isSignUp) toggleForm(); }}
+                  className={`flex-1 py-2.5 px-3 rounded-md font-semibold text-sm transition-all duration-300 ${
+                    isSignUp ? 'bg-cyan-600 text-white shadow-lg shadow-cyan-600/30' : 'text-slate-400 hover:text-slate-300'
+                  }`}
+                >
+                  Sign Up
+                </button>
+              </div>
+              <div className={`relative h-auto ${isSignUp ? 'min-h-[430px]' : 'min-h-[340px]'}`}>
+                {/* Sign In */}
+                <div className={`absolute inset-0 transition-all duration-500 ${isSignUp ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+                  <form onSubmit={handleLoginSubmit(onLoginSubmit)} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Email Address</label>
+                      <div className="relative group">
+                        <Mail className="absolute left-3 top-3.5 w-4 h-4 text-slate-500 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="email"
+                          placeholder="your@gmail.com"
+                          autoComplete="email"
+                          className={`w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all ${
+                            loginErrors.emailId ? 'border-red-500/50' : 'border-slate-700/50'
+                          }`}
+                          {...registerLogin('emailId')}
+                        />
                       </div>
-
-                      {/* Password */}
-                      <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-                        <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
-                        <div className="relative group">
-                          <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
-                            autoComplete="current-password"
-                            className={`w-full pl-10 pr-10 py-3 bg-slate-950/60 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition-all transform focus:scale-[1.015] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] ${
-                              loginErrors.password ? 'border-red-500' : 'border-slate-800'
-                            }`}
-                            {...registerLogin('password')}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-3 text-slate-500 hover:text-sky-400 transition-colors transform hover:scale-110"
-                          >
-                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                          </button>
-                        </div>
-                        {loginErrors.password && (
-                          <p className="text-red-400 text-xs mt-1">{loginErrors.password.message}</p>
-                        )}
+                      {loginErrors.emailId && <p className="text-red-400 text-xs mt-1.5">{loginErrors.emailId.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Password</label>
+                      <div className="relative group">
+                        <Lock className="absolute left-3 top-3.5 w-4 h-4 text-slate-500 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="enter your password"
+                          autoComplete="current-password"
+                          className={`w-full pl-10 pr-10 py-2.5 bg-slate-800/50 border rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all ${
+                            loginErrors.password ? 'border-red-500/50' : 'border-slate-700/50'
+                          }`}
+                          {...registerLogin('password')}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
                       </div>
-
-                      {/* Sign In Button */}
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 transform hover:scale-[1.02] active:scale-[0.99] shadow-lg shadow-sky-500/30 animate-fade-in"
-                        style={{ animationDelay: '200ms' }}
-                      >
-                        {loading ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Signing in...
-                          </>
-                        ) : (
-                          'Sign In'
-                        )}
-                      </button>
-                    </form>
+                      {loginErrors.password && <p className="text-red-400 text-xs mt-1.5">{loginErrors.password.message}</p>}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full mt-6 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-cyan-600/40"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Signing in...
+                        </>
+                      ) : (
+                        <>
+                          Sign In <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                  <div className="mt-6 flex items-center gap-3">
+                    <div className="flex-1 h-px bg-slate-700/30" />
+                    <span className="text-xs text-slate-400 px-2">OR</span>
+                    <div className="flex-1 h-px bg-slate-700/30" />
                   </div>
-
-                  {/* Sign Up Form */}
-                  <div
-                    className={`absolute inset-0 transition-all duration-700 ease-out ${
-                      isSignUp ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-12 pointer-events-none'
-                    }`}
-                  >
-                    <form onSubmit={handleSignupSubmit(onSignupSubmit)} className="space-y-4">
-                      {/* First Name */}
-                      <div className="animate-fade-in" style={{ animationDelay: '0ms' }}>
-                        <label className="block text-sm font-medium text-slate-200 mb-2">First Name</label>
-                        <div className="relative group">
-                          <User className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
-                          <input
-                            type="text"
-                            placeholder="John"
-                            autoComplete="given-name"
-                            className={`w-full pl-10 pr-4 py-3 bg-slate-950/60 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition-all transform focus:scale-[1.015] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] ${
-                              signupErrors.firstName ? 'border-red-500' : 'border-slate-800'
-                            }`}
-                            {...registerSignup('firstName')}
-                          />
-                        </div>
-                        {signupErrors.firstName && (
-                          <p className="text-red-400 text-xs mt-1">{signupErrors.firstName.message}</p>
-                        )}
-                      </div>
-
-                      {/* Email */}
-                      <div className="animate-fade-in" style={{ animationDelay: '100ms' }}>
-                        <label className="block text-sm font-medium text-slate-200 mb-2">Email</label>
-                        <div className="relative group">
-                          <Mail className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
-                          <input
-                            type="email"
-                            placeholder="john@example.com"
-                            autoComplete="email"
-                            className={`w-full pl-10 pr-4 py-3 bg-slate-950/60 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition-all transform focus:scale-[1.015] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] ${
-                              signupErrors.emailId ? 'border-red-500' : 'border-slate-800'
-                            }`}
-                            {...registerSignup('emailId')}
-                          />
-                        </div>
-                        {signupErrors.emailId && (
-                          <p className="text-red-400 text-xs mt-1">{signupErrors.emailId.message}</p>
-                        )}
-                      </div>
-
-                      {/* Password */}
-                      <div className="animate-fade-in" style={{ animationDelay: '200ms' }}>
-                        <label className="block text-sm font-medium text-slate-200 mb-2">Password</label>
-                        <div className="relative group">
-                          <Lock className="absolute left-3 top-3 w-5 h-5 text-slate-500 group-focus-within:text-sky-400 transition" />
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="••••••••"
-                            autoComplete="new-password"
-                            className={`w-full pl-10 pr-10 py-3 bg-slate-950/60 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/40 transition-all transform focus:scale-[1.015] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.02)] ${
-                              signupErrors.password ? 'border-red-500' : 'border-slate-800'
-                            }`}
-                            {...registerSignup('password')}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-3 text-slate-500 hover:text-sky-400 transition-colors transform hover:scale-110"
-                          >
-                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                          </button>
-                        </div>
-                        {signupErrors.password && (
-                          <p className="text-red-400 text-xs mt-1">{signupErrors.password.message}</p>
-                        )}
-                      </div>
-
-                      {/* Sign Up Button */}
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-gradient-to-r from-cyan-500 to-cyan-600 hover:from-cyan-600 hover:to-cyan-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed mt-6 transform hover:scale-[1.02] active:scale-[0.99] shadow-lg shadow-sky-500/30 animate-fade-in"
-                        style={{ animationDelay: '300ms' }}
-                      >
-                        {loading ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            Creating account...
-                          </>
-                        ) : (
-                          'Create Account'
-                        )}
-                      </button>
-                    </form>
+                  <div className="mt-6 grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={handleGoogleAuth}
+                      disabled={firebaseLoading}
+                      className="col-span-3 flex items-center justify-center gap-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 disabled:opacity-60"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      Google
+                    </button>
                   </div>
                 </div>
-
-    
-                {/* Small Tagline
-                <p className="text-center text-slate-500 text-xs mt-6">
-                  Superfast • Secure • AI-Assisted Learning
-                </p> */}
+                {/* Sign Up */}
+                <div className={`absolute inset-0 transition-all duration-500 ${isSignUp ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                  <form onSubmit={handleSignupSubmit(onSignupSubmit)} className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Full Name</label>
+                      <div className="relative group">
+                        <User className="absolute left-3 top-3.5 w-4 h-4 text-slate-500 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="text"
+                          placeholder="Enter your name"
+                          autoComplete="given-name"
+                          className={`w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all ${
+                            signupErrors.firstName ? 'border-red-500/50' : 'border-slate-700/50'
+                          }`}
+                          {...registerSignup('firstName')}
+                        />
+                      </div>
+                      {signupErrors.firstName && <p className="text-red-400 text-xs mt-1.5">{signupErrors.firstName.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Email Address</label>
+                      <div className="relative group">
+                        <Mail className="absolute left-3 top-3.5 w-4 h-4 text-slate-500 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type="email"
+                          placeholder="your@gmail.com"
+                          autoComplete="email"
+                          className={`w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all ${
+                            signupErrors.emailId ? 'border-red-500/50' : 'border-slate-700/50'
+                          }`}
+                          {...registerSignup('emailId')}
+                        />
+                      </div>
+                      {signupErrors.emailId && <p className="text-red-400 text-xs mt-1.5">{signupErrors.emailId.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-2 uppercase tracking-wider">Password</label>
+                      <div className="relative group">
+                        <Lock className="absolute left-3 top-3.5 w-4 h-4 text-slate-500 group-focus-within:text-cyan-500 transition-colors" />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="enter your password"
+                          autoComplete="new-password"
+                          className={`w-full pl-10 pr-10 py-2.5 bg-slate-800/50 border rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all ${
+                            signupErrors.password ? 'border-red-500/50' : 'border-slate-700/50'
+                          }`}
+                          {...registerSignup('password')}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3.5 text-slate-500 hover:text-slate-300 transition-colors"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {signupErrors.password && <p className="text-red-400 text-xs mt-1.5">{signupErrors.password.message}</p>}
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full mt-6 bg-cyan-600 hover:bg-cyan-700 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-cyan-600/40"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          Create Account <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+                  <div className="mt-6 flex items-center gap-3">
+                    <div className="flex-1 h-px bg-slate-700/30" />
+                    <span className="text-xs text-slate-400 px-2">OR</span>
+                    <div className="flex-1 h-px bg-slate-700/30" />
+                  </div>
+                  <div className="mt-6 grid grid-cols-3 gap-1">
+                    <button
+                      type="button"
+                      onClick={handleGoogleAuth}
+                      disabled={firebaseLoading}
+                      className="col-span-3 w-full flex items-center justify-center gap-1 bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 text-white font-semibold py-2.5 rounded-lg transition-all duration-200 disabled:opacity-60"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24">
+                        <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                      </svg>
+                      Google
+                    </button>
+                  </div>
+                </div>
               </div>
+              {/* Optional security footer (currently commented out) */}
             </div>
           </div>
         </div>
       </div>
-
-      {/* <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-  <div className="w-[90%] sm:w-auto">
-    <SocialFooter />
-  </div>
-</div> */}
-
-
-      {/* Custom Animations */}
       <style>{`
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(20px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in-up { animation: fade-in-up 0.6s ease-out; }
-
-        @keyframes fade-in {
+        @keyframes subtle-fade {
           from { opacity: 0; }
-          to   { opacity: 1; }
+          to { opacity: 1; }
         }
-        .animate-fade-in { animation: fade-in 0.6s ease-out; }
-
-        @keyframes float {
-          0%   { transform: translateY(0); opacity: 0.4; }
-          50%  { transform: translateY(-18px); opacity: 0.9; }
-          100% { transform: translateY(0); opacity: 0.4; }
+        .animate-subtle-fade {
+          animation: subtle-fade 0.3s ease-out;
         }
-        .animate-float { animation: float infinite ease-in-out; }
-
-        @keyframes gradient {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-gradient { background-size: 200% 200%; animation: gradient 5s ease infinite; }
-
-        @keyframes shimmer {
-          0%   { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        .animate-shimmer { animation: shimmer 3.5s linear infinite; }
-
-        @keyframes bounce-slow {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
-        }
-        .animate-bounce-slow { animation: bounce-slow 2.8s ease-in-out infinite; }
       `}</style>
     </div>
   );

@@ -8,4 +8,17 @@ const axiosClient = axios.create({
     }
 });
 
+// Adding interceptor to include Clerk JWT
+axiosClient.interceptors.request.use(async (config) => {
+  try {
+    const token = localStorage.getItem('clerk_jwt_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (error) {
+    console.error('Token error:', error);
+  }
+  return config;
+}, error => Promise.reject(error));
+
 export default axiosClient;

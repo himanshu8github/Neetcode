@@ -21,6 +21,16 @@ const userSchema = new Schema({
         lowercase:true,
         immutable:true,
     },
+   firebaseUid: {
+    type: String,
+    unique: true,
+    sparse: true,    // only for users who login with Firebase
+},
+    authMethod: {
+        type: String,
+        enum: ['manual', 'firebase', 'google'],
+        default: 'manual'
+    },
     age:{
         type:Number,
         min:10,
@@ -43,8 +53,9 @@ const userSchema = new Schema({
 ,
     password:{
         type: String,
-        required : true
-
+     required: function () {
+      return this.authMethod === "manual"; // password only required for manual signup
+    }
     }
 }, 
 {

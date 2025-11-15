@@ -4,6 +4,100 @@ const bcrypt = require("bcrypt");
 const jwt = require('jsonwebtoken');
 const redisClient = require('../config/redis');
 const SubmissionCodeSchema = require("../models/codeSubmission")
+const admin = require("../config/firebaseAdmin");
+
+
+
+const firebaseRegister = async (req, res) => {
+    try {
+        const { uid, firstName, emailId, photoURL, idToken } = req.body;
+
+       if (!uid || !emailId || !idToken) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Verify idToken with Firebase Admin to prevent spoofing
+        let decodedToken;
+        try {
+          decodedToken = await admin.auth().verifyIdToken(idToken);
+        } catch (err) {
+          return res.status(401).json({ message: 'Invalid Firebase ID token' });
+        }
+        // Ensure token uid matches provided uid and email matches
+        if (decodedToken.uid !== uid || (decodedToken.email && decodedToken.email !== emailId)) {
+          return res.status(401).json({ message: 'ID token verification failed (uid/email mismatch)' });
+        }
+
+        // Check if user already exists
+        const existingUser = await userSchema.findOne({ emailId });
+        if (existingUser) {
+            const token = jwt.sign(
+                { _id: existingUser._id, emailId: emailId, role: existingUser.role },
+                process.env.JWT_KEY,
+                { expiresIn: 60 * 60 }
+            );
+
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: true,
+                sameSite: "none",
+                maxAge: 60 * 60 * 1000,
+                path: "/"
+            });
+
+            return res.status(200).json({
+                user: {
+                    firstName: existingUser.firstName,
+                    emailId: existingUser.emailId,
+                    _id: existingUser._id,
+                    role: existingUser.role
+                },
+                message: "User already exists, logged in successfully"
+            });
+        }
+
+        // Create new user from Firebase
+        const newUser = await userSchema.create({
+            firstName: firstName || 'User',
+            emailId,
+            firebaseUid: uid,
+             authMethod: 'firebase',
+            photoURL: photoURL || null,
+            password: null,
+            role: 'user',
+            problemSolved: []
+        });
+
+        const token = jwt.sign(
+            { _id: newUser._id, emailId: emailId, role: newUser.role },
+            process.env.JWT_KEY,
+            { expiresIn: 60 * 60 }
+        );
+
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: true,
+            sameSite: "none",
+            maxAge: 60 * 60 * 1000,
+            path: "/"
+        });
+
+        res.status(201).json({
+            user: {
+                firstName: newUser.firstName,
+                emailId: newUser.emailId,
+                _id: newUser._id,
+                role: newUser.role
+            },
+            message: "User created via Firebase successfully"
+        });
+    } catch (err) {
+        res.status(400).json({ message: 'Error: ' + err.message });
+    }
+};
+
+
+
 
 
 const register = async(req, res) => {
@@ -80,6 +174,11 @@ const login = async (req, res) => {
        const user = await userSchema.findOne({ emailId });
     if (!user) throw new Error("User not found");
 
+if (user.authMethod !== "manual") {
+    throw new Error("Use Google Sign in");
+}
+
+
     const match = await bcrypt.compare(password, user.password);
     
     if (!match) throw new Error("Invalid Credentials");
@@ -119,7 +218,16 @@ const logout = async (req, res) => {
     try{
        
         const {token} = req.cookies;
+         if (!token) {
+          return res.status(400).send('No token provided');
+        }
         const payload = jwt.decode(token);
+
+        if (!payload || !payload.exp) {
+          // Still clear cookie
+          res.cookie("token", null, {expires: new Date(Date.now())});
+          return res.send("Logout successfully");
+        }
 
          // Block the token using Redis
         await redisClient.set(`token:${token}`, "Blocked");
@@ -228,7 +336,7 @@ const deleteUser = async (req, res) => {
 
 const getAllUsers = async (req, res) => {
     try {
-        const users = await userSchema.find({});
+          const users = await userSchema.find({}, '-password -firebaseUid -__v');
         
         if (users.length === 0) {
             return res.status(200).send({
@@ -257,10 +365,10 @@ const deleteUserProfile = async (req, res) => {
         const userId = req.user._id;
         
       // Delete the user first
-    await User.findByIdAndDelete(userId);
+    await userSchema.findByIdAndDelete(userId);
 
     // Delete all submissions made by this user
-    await Submission.deleteMany({ userId });
+    await SubmissionCodeSchema.deleteMany({ userId });
 
          res.status(200).send("Profile Deleted sucessfully");
 
@@ -272,4 +380,4 @@ const deleteUserProfile = async (req, res) => {
 }
 
 
-module.exports = {register, login, logout, adminRegister, firstAdminRegister, deleteUser, getAllUsers, deleteUserProfile};
+module.exports = {register, login, logout, adminRegister, firstAdminRegister, deleteUser, getAllUsers, deleteUserProfile, firebaseRegister};
