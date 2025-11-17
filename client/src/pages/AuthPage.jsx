@@ -300,7 +300,9 @@ function AuthPage() {
 
               </div>
 
-              <div className={`relative h-auto ${isSignUp ? 'min-h-[520px]' : 'min-h-[520px]'}`}>
+              <div className={`relative h-auto ${ isSignUp
+      ? 'min-h-[500px] lg:min-h-[440px]'
+      : 'min-h-[500px] lg:min-h-[400px]'}`}>
                 {/* Sign In */}
                 <div className={`absolute inset-0 transition-all duration-500 ${isSignUp ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
                   <form onSubmit={handleLoginSubmit(onLoginSubmit)} className="space-y-4">
@@ -383,7 +385,7 @@ function AuthPage() {
                   </div>
 
                   {/* Social footer (Sign In) */}
-<div className="mt-6 pt-6 border-t border-slate-700/30">
+<div className="mt-6 pt-6 border-t border-slate-700/30 lg:hidden">
   <p className="text-center text-xs text-slate-400 mb-3">Connect with us</p>
 
   <div className="flex justify-center gap-4">
@@ -529,7 +531,7 @@ function AuthPage() {
                   </div>
 
                   {/* Social footer (Sign Up) */}
-                 <div className="mt-6 pt-6 border-t border-slate-700/30">
+                 <div className="mt-6 pt-6 border-t border-slate-700/30 lg:hidden" >
   <p className="text-center text-xs text-slate-400 mb-3">Connect with us</p>
 
   <div className="flex justify-center gap-4">
